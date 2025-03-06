@@ -29,12 +29,7 @@ const Login = () => {
   return (
     <div className="py-16">
       <div className="flex bg-white rounded-lg shadow-lg overflow-hidden mx-auto max-w-sm lg:max-w-4xl min-h-[80vh]">
-        <div
-          className="hidden lg:block lg:w-1/2 bg-cover relative"
-          style={{
-            backgroundImage: "linear-gradient(135deg, #0008BF, #43B2CB)",
-          }}
-        >
+        <div className="hidden lg:block lg:w-1/2 bg-cover relative bg-gradient-to-l from-[#0008BF] to-[#164beb]">
           <img
             src={Logo}
             alt="Description of image"
@@ -85,7 +80,7 @@ const Login = () => {
             </div>
             <div className="mt-8">
               <button
-                className=" cursor-pointer pointer-events-auto bg-gradient-to-l from-[#0008BF] to-[#43B2CB] text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600"
+                className=" cursor-pointer pointer-events-auto bg-gradient-to-l from-[#0008BF] to-[#164beb] text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600"
                 type="submit"
               >
                 Login
