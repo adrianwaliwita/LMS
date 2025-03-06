@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
       role = "admin";
     } else if (email === "lecturer@example.com" && password === "p123") {
       role = "lecturer";
-    } else if (email === "student@example.com" && password === "password123") {
+    } else if (email === "student@example.com" && password === "123") {
       role = "student";
     }
 
