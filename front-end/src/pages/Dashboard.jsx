@@ -1,9 +1,9 @@
 import Sidebar from "../components/Sidebar";
-import Header from "../components/Header";
-
-// import {Header, Sidebar} from "../components/Header";
+import HeaderDesktop from "../components/HeaderDesktop";
 import { useAuth } from "../context/AuthContext";
-
+import Schedule from "../components/MiniSchedule";
+import NavlayOut from "../layout/NavLayout";
+import Announcements from "../components/Announcements";
 const Dashboard = () => {
   const { user } = useAuth();
 
@@ -19,12 +19,19 @@ const Dashboard = () => {
 
   return (
     <div className="flex ">
-      <Sidebar></Sidebar>
-
       <div className="flex-1 p-6 rounded-2xl">
-        <Header />
-        <h2 className="text-xl font-bold mt-4">Welcome to your Dashboard</h2>
-        <p className="text-gray-700">{dashboardContent[user.role]}</p>
+        <div className="hidden lg:block">
+          <HeaderDesktop />
+        </div>
+
+        {/* Show Mini Schedule only for Students */}
+        {user.role === "student" && (
+          <div className="mt-6">
+            <Schedule />
+
+            <Announcements />
+          </div>
+        )}
       </div>
     </div>
   );
