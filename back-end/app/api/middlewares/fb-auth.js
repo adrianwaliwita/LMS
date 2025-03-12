@@ -1,10 +1,23 @@
-import { auth } from '../firebase/firebase-admin.js';
-
+import { auth } from '../../firebase/firebase-admin.js';
+import config from '../../utils/config.js';
+import logger from '../../utils/logger.js';
 /**
  * Middleware to verify Firebase ID token
  * Expects the ID token in the Authorization header as 'Bearer <token>'
  */
 export const verifyFirebaseToken = async (req, res, next) => {
+    if (config.firebase.disableAuth) {
+        // Create a dummy user object
+        req.user = {
+            uid: 'dummy-user',
+            email: 'dummy-user@example.com',
+            role: 1 // Admin role
+        };
+
+        logger.warn('[fb-auth.verifyFirebaseToken] Firebase authentication is disabled!!');
+        return next();
+    }
+
     if (!req.headers.authorization || !req.headers.authorization.startsWith('Bearer ')) {
         return res.status(401).json({ 
             error: 'Unauthorized', 
@@ -17,7 +30,7 @@ export const verifyFirebaseToken = async (req, res, next) => {
 
     try {
         // Verify the token and get user data
-        const decodedToken = await auth.verifyIdToken(idToken);
+        const decodedToken = await auth.verifyIdToken(idToken, config.firebase.checkRevokedTokens);
         
         // Add the user data to the request object
         req.user = decodedToken;

@@ -14,6 +14,27 @@ class User {
         this.updatedAt = updatedAt;
     }
 
+    static async getUserById(id) {
+        const user = await prisma.user.findUnique({
+            where: { id: Number(id) }
+        });
+
+        return user ? new User(user) : null;
+    }
+    
+    static async listUsers({ role, email }) {
+        const users = await prisma.user.findMany({
+            where: {
+                AND: [
+                    role ? { role: Number(role) } : {},
+                    email ? { email: { contains: email } } : {}
+                ]
+            }
+        });
+
+        return users.map(user => new User(user));
+    }
+
     static async createUser({ email, password, firstName, lastName, role }) {
         let firebaseUser;
         try {
@@ -44,7 +65,8 @@ class User {
                     await auth.deleteUser(firebaseUser.uid);
                 } catch (deleteError) {
                     logger.error(
-                        `[User.createUser] Failed to cleanup Firebase user after database error for UID: ${firebaseUser.uid}. Error: ${deleteError.message}`
+                        `[User.createUser] Failed to cleanup Firebase user after database error for UID: '${firebaseUser.uid}'`,
+                        deleteError
                     );
                 }
             }
@@ -53,16 +75,25 @@ class User {
         }
     }
 
-    static async findByEmail(email) {
-        return await prisma.user.findUnique({
-            where: { email_address: email }
+    static async updateUser({ id, firstName, lastName, role }) {
+        return await prisma.user.update({
+            where: { id: Number(id) },
+            data: {
+                firstName,
+                lastName,
+                role: role !== undefined ? Number(role) : undefined
+            }
         });
     }
 
-    static async findByFirebaseUid(firebaseUid) {
-        return await prisma.user.findUnique({
-            where: { firebase_uid: firebaseUid }
+    static async deleteUser(id) {
+        // Delete user from database
+        const deletedUser = await prisma.user.delete({
+            where: { id: Number(id) }
         });
+
+        // Delete user from Firebase
+        await auth.deleteUser(deletedUser.firebaseUid);
     }
 }
 

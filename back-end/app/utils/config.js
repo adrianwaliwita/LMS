@@ -17,5 +17,9 @@ export default {
         user: (process.env.DB_USER || 'root').trim(),
         password: (process.env.DB_PASSWORD || '').trim(),
         database: (process.env.DB_NAME || 'ashbourne-scms').trim(),
+    },
+    firebase: {
+        disableAuth: process.env.FIREBASE_DISABLE_AUTH === 'true',
+        checkRevokedTokens: process.env.FIREBASE_CHECK_REVOKED_TOKENS !== 'false'
     }
 };
