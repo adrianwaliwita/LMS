@@ -8,7 +8,25 @@ class Module {
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
-
+    
+    static async getModuleById(id) {
+        const module = await prisma.module.findUnique({
+            where: { id: Number(id) }
+        });
+        
+        return module ? new Module(module) : null;
+    }
+    
+    static async listModules({ title }) {
+        const modules = await prisma.module.findMany({
+            where: {
+                title: title ? { contains: title } : undefined
+            }
+        });
+        
+        return modules.map(module => new Module(module));
+    }
+    
     static async createModule({ title, description }) {
         const module = await prisma.module.create({
             data: {
@@ -19,33 +37,17 @@ class Module {
 
         return new Module(module);
     }
-
-    static async getModuleById(id) {
-        const module = await prisma.module.findUnique({
-            where: { id: Number(id) }
-        });
-
-        return module ? new Module(module) : null;
-    }
-
-    static async listModules({ title }) {
-        const modules = await prisma.module.findMany({
-            where: {
-                title: title ? { contains: title } : undefined
-            }
-        });
-
-        return modules.map(module => new Module(module));
-    }
-
+    
     static async updateModule({ id, title, description }) {
-        return await prisma.module.update({
+        const module = await prisma.module.update({
             where: { id: Number(id) },
             data: {
                 title,
                 description
             }
         });
+
+        return new Module(module);
     }
 
     static async deleteModule(id) {
@@ -55,4 +57,4 @@ class Module {
     }
 }
 
-export default Module;
+export { Module };

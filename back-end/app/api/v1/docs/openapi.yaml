@@ -50,12 +50,58 @@ components:
         role:
           type: integer
           description: >
-                  User role:
-                  * 0 - Terminated
-                  * 1 - Admin
-                  * 2 - Coordinator
-                  * 3 - Lecturer
-                  * 4 - Student
+            User role:
+            * 0 - Terminated
+            * 1 - Admin
+            * 2 - Coordinator
+            * 3 - Lecturer
+            * 4 - Student
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Course ID
+        title:
+          type: string
+          description: Course title
+        description:
+          type: string
+          description: Course description
+        category:
+          type: integer
+          description: >
+            Course category:
+            * 1 - IT
+            * 2 - Business
+            * 3 - Engineering
+            * 4 - Science
+            * 5 - Art
+        level:
+          type: integer
+          description: >
+            Course level:
+            * 1 - Diploma
+            * 2 - Undergraduate
+            * 3 - Postgraduate
+        price:
+          type: number
+          format: float
+          description: Course price
+        modules:
+          type: array
+          description: List of associated modules
+          items:
+            $ref: '#/components/schemas/Module'
         createdAt:
           type: string
           format: date-time

@@ -1,4 +1,4 @@
-import Module from '../models/Module.js';
+import { Module } from '../models/Module.js';
 import logger from '../utils/logger.js';
 
 export const getModuleById = async (req, res) => {
@@ -79,20 +79,36 @@ export const updateModule = async (req, res) => {
     const { id } = req.params;
     const { title, description } = req.body;
 
+    // Validate that at least one field is provided for update
+    if (!title && !description) {
+        return res.status(400).json({
+            error: 'Missing fields',
+            message: 'At least one field (title, description) must be provided for update'
+        });
+    }
+
+    // Validate title and description if provided
+    if (!title?.trim() || !description?.trim()) {
+        return res.status(400).json({
+            error: 'Invalid input',
+            message: `${!title?.trim() ? 'title' : 'description'} cannot be empty`
+        });
+    }
+
     try {
         const module = await Module.updateModule({ id, title, description });
 
         logger.info(`[module.updateModule] Module updated successfully for ID: '${id}'`);
         res.json(module);
     } catch (error) {
-        if (error.code === 'P2025') { // Record not found
+        if (error.code === 'P2025') {
             return res.status(404).json({
                 error: 'Module not found',
                 message: 'No module found with the provided ID'
             });
         }
 
-        if (error.code === 'P2002') { // Unique constraint failed
+        if (error.code === 'P2002') {
             return res.status(409).json({
                 error: 'Title already exists',
                 message: 'A module with this title already exists'

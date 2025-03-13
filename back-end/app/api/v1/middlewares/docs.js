@@ -13,6 +13,7 @@ const baseSpec = YAML.load(join(__dirname, '../docs/openapi.yaml'));
 const authPaths = YAML.load(join(__dirname, '../docs/paths/auth.yaml'));
 const userPaths = YAML.load(join(__dirname, '../docs/paths/users.yaml'));
 const modulePaths = YAML.load(join(__dirname, '../docs/paths/modules.yaml'));
+const coursePaths = YAML.load(join(__dirname, '../docs/paths/courses.yaml'));
 
 // Merge all paths
 const spec = {
@@ -20,7 +21,8 @@ const spec = {
     paths: {
         ...authPaths,
         ...userPaths,
-        ...modulePaths
+        ...modulePaths,
+        ...coursePaths
     }
 };
 

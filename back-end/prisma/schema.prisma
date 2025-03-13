@@ -51,8 +51,8 @@ model Course {
   id          Int      @id @default(autoincrement())
   title       String   @unique
   description String
-  category    String
-  level       String
+  category    Int
+  level       Int
   price       Float
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

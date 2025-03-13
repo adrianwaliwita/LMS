@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import { User, UserRoles } from '../models/User.js';
 import logger from '../utils/logger.js';
 
 export const getUserById = async (req, res) => {
@@ -65,16 +65,16 @@ export const createUser = async (req, res) => {
     if (password.length < 6) {
         return res.status(400).json({
             error: 'Weak password',
-            message: 'Password must be at least 6 characters long'
+            message: 'password must be at least 6 characters long'
         });
     }
 
     // Validate role
-    const validRoles = [0, 1, 2, 3, 4]; // (0: Terminated, 1: Admin, 2: Coodinator, 3: Lecturer, 4: Student) 
+    const validRoles = Object.keys(UserRoles).map(Number);
     if (!validRoles.includes(Number(role))) {
         return res.status(400).json({
             error: 'Invalid role',
-            message: 'Role must be 0 (Terminated), 1 (Admin), 2 (Coordinator), 3 (Lecturer), or 4 (Student)'
+            message: `role must be one of: ${Object.entries(UserRoles).map(([key, value]) => `${key} (${value})`).join(', ')}`
         });
     }
 
@@ -110,13 +110,31 @@ export const updateUser = async (req, res) => {
     const { id } = req.params;
     const { firstName, lastName, role } = req.body;
 
-    // Validate role
-    const validRoles = [0, 1, 2, 3, 4]; // (0: Terminated, 1: Admin, 2: Coodinator, 3: Lecturer, 4: Student) 
-    if (!validRoles.includes(Number(role))) {
+    // Validate that at least one field is provided for update
+    if (!firstName && !lastName && role === undefined) {
         return res.status(400).json({
-            error: 'Invalid role',
-            message: 'Role must be 0 (Terminated), 1 (Admin), 2 (Coordinator), 3 (Lecturer), or 4 (Student)'
+            error: 'Missing fields',
+            message: 'At least one field (firstName, lastName, or role) must be provided for update'
         });
+    }
+
+    // Validate firstName and lastName if provided
+    if (!firstName?.trim() || !lastName?.trim()) {
+        return res.status(400).json({
+            error: 'Invalid input',
+            message: `${!firstName?.trim() ? 'firstName' : 'lastName'} cannot be empty`
+        });
+    }
+
+    // Validate role if provided
+    if (role !== undefined) {
+        const validRoles = Object.keys(UserRoles).map(Number);
+        if (!validRoles.includes(Number(role))) {
+            return res.status(400).json({
+                error: 'Invalid role',
+                message: `Role must be one of: ${Object.entries(UserRoles).map(([key, value]) => `${key} (${value})`).join(', ')}`
+            });
+        }
     }
     
     try {
@@ -135,7 +153,7 @@ export const updateUser = async (req, res) => {
         logger.error(`[user.updateUser] Failed to update user for ID: '${id}'`, error);
         res.status(500).json({
             error: 'Internal server error',
-            message: 'Failed to update user'
+            message: error.toString()
         });
     }
 };

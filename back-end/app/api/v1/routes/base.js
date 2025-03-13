@@ -4,6 +4,7 @@ import { verifyFirebaseToken } from '../middlewares/fb-auth.js';
 import { auth } from '../../../controllers/auth.js';
 import usersRouter from './users.js';
 import modulesRouter from './modules.js';
+import coursesRouter from './courses.js';
 
 const v1Router = Router();
 
@@ -20,5 +21,6 @@ v1Router.use(verifyFirebaseToken);
 // Other Routes
 v1Router.use('/users', usersRouter);
 v1Router.use('/modules', modulesRouter);
+v1Router.use('/courses', coursesRouter);
 
 export default v1Router;

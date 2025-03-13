@@ -2,6 +2,14 @@ import { auth } from '../firebase/firebase-admin.js';
 import prisma from '../utils/prisma.js';
 import logger from '../utils/logger.js';
 
+const UserRoles = Object.freeze({
+    0: 'TERMINATED',
+    1: 'ADMIN',
+    2: 'COORDINATOR',
+    3: 'LECTURER',
+    4: 'STUDENT'
+});
+
 class User {
     constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt }) {
         this.id = id;
@@ -44,20 +52,24 @@ class User {
                 displayName: `${firstName} ${lastName}`
             });
 
-            const user = await prisma.user.create({
-                data: {
-                    firebaseUid: firebaseUser.uid,
-                    firstName: firstName,
-                    lastName: lastName,
-                    email: email,
-                    role: role
-                }
-            });
+            const user = await prisma.$transaction(async (tx) => {
+                const newUser = await tx.user.create({
+                    data: {
+                        firebaseUid: firebaseUser.uid,
+                        firstName: firstName,
+                        lastName: lastName,
+                        email: email,
+                        role: role
+                    }
+                });
 
-            // Set custom claims for user
-            await auth.setCustomUserClaims(firebaseUser.uid, { 
-                role: role,
-                systemId: user.id
+                // Set custom claims for user
+                await auth.setCustomUserClaims(firebaseUser.uid, {
+                    role: role,
+                    systemId: newUser.id
+                });
+
+                return newUser;
             });
 
             return new User(user);
@@ -79,14 +91,33 @@ class User {
     }
 
     static async updateUser({ id, firstName, lastName, role }) {
-        return await prisma.user.update({
-            where: { id: Number(id) },
-            data: {
-                firstName,
-                lastName,
-                role: role !== undefined ? Number(role) : undefined
+        const user = await prisma.$transaction(async (tx) => {
+            const updatedUser = await tx.user.update({
+                where: { id: Number(id) },
+                data: {
+                    firstName,
+                    lastName,
+                    role: role !== undefined ? Number(role) : undefined
+                }
+            });
+
+            // Update Firebase custom claims if role is changed
+            if (role !== undefined) {
+                await auth.setCustomUserClaims(updatedUser.firebaseUid, { 
+                    role: Number(role),
+                    systemId: updatedUser.id
+                });
+
+                // Revoke all refresh tokens for the user
+                await auth.revokeRefreshTokens(updatedUser.firebaseUid);
+                
+                logger.info(`[User.updateUser] Firebase custom claims updated and tokens revoked for user ID: '${id}'`);
             }
+
+            return updatedUser;
         });
+
+        return new User(user);
     }
 
     static async deleteUser(id) {
@@ -100,4 +131,4 @@ class User {
     }
 }
 
-export default User; 
+export { UserRoles, User };
