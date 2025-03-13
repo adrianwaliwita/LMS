@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import apiRoutes from './api/api-routes.js';
+import apiRoutes from './api/routes/api.js';
 import logger from './utils/logger.js';
 import config from './utils/config.js';
 

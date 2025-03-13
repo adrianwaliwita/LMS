@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { verifyFirebaseToken } from './middlewares/fb-auth.js';
-import { login } from '../controllers/login.js';
-import usersRouter from './routes/users.js';
-import modulesRouter from './routes/modules.js';
+import { verifyFirebaseToken } from '../middlewares/fb-auth.js';
+import { login } from '../../controllers/login.js';
+import usersRouter from './users.js';
+import modulesRouter from './modules.js';
 
 const apiRouter = Router();
 

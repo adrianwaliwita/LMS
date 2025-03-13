@@ -1,5 +1,4 @@
 import prisma from '../utils/prisma.js';
-import logger from '../utils/logger.js';
 
 class Module {
     constructor({ id, title, description, createdAt, updatedAt }) {
