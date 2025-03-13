@@ -15,14 +15,120 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  firebaseUid  String   @unique @map("firebase_uid")
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  email        String   @unique @map("email")
-  role         Int
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id          Int      @id @default(autoincrement())
+  firebaseUid String   @unique @map("firebase_uid")
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  email       String   @unique
+  role        Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 1:1 relationship with Batch (for students)
+  student StudentBatch?
+  // M:M relationship with Module (for lecturers)
+  modules LecturerModule[]
 
   @@map("user")
+}
+
+model Module {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // M:M relationship with Course
+  courses   CourseModule[]
+  // M:M relationship with User (Lecturer)
+  lecturers LecturerModule[]
+
+  @@map("module")
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  description String
+  category    String
+  level       String
+  price       Float
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 1:M relationship with Batch
+  batches Batch[]
+  // M:M relationship with Module
+  modules CourseModule[]
+
+  @@map("course")
+}
+
+// Junction table for Course-Module M:M relationship
+model CourseModule {
+  courseId  Int      @map("course_id")
+  moduleId  Int      @map("module_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // M:1 relationship with Course
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // M:1 relationship with Module
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, moduleId])
+  @@map("course_module")
+}
+
+model Batch {
+  id              Int      @id @default(autoincrement())
+  courseId        Int      @map("course_id")
+  name            String
+  enrollStartDate DateTime @map("enroll_start_date")
+  enrollEndDate   DateTime @map("enroll_end_date")
+  batchStartDate  DateTime @map("batch_start_date")
+  batchEndDate    DateTime @map("batch_end_date")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 1:M relationship with Course
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  // 1:M relationship with StudentBatch
+  students StudentBatch[]
+
+  @@map("batch")
+}
+
+// Junction table for Student-Batch M:1 relationship
+model StudentBatch {
+  userId     Int      @unique @map("user_id")
+  batchId    Int      @map("batch_id")
+  enrolledAt DateTime @default(now()) @map("enrolled_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // 1:1 relationship with User
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // M:1 relationship with Batch
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@id([userId, batchId])
+  @@map("student_batch")
+}
+
+// Junction table for Lecturer-Module M:M relationship
+model LecturerModule {
+  userId    Int      @map("user_id")
+  moduleId  Int      @map("module_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // M:1 relationship with User
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // M:1 relationship with Module
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, moduleId])
+  @@map("lecturer_module")
 }
