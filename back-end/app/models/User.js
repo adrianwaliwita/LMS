@@ -44,9 +44,6 @@ class User {
                 displayName: `${firstName} ${lastName}`
             });
 
-            // Set custom claims for role
-            await auth.setCustomUserClaims(firebaseUser.uid, { role });
-
             const user = await prisma.user.create({
                 data: {
                     firebaseUid: firebaseUser.uid,
@@ -55,6 +52,12 @@ class User {
                     email: email,
                     role: role
                 }
+            });
+
+            // Set custom claims for user
+            await auth.setCustomUserClaims(firebaseUser.uid, { 
+                role: role,
+                systemId: user.id
             });
 
             return new User(user);

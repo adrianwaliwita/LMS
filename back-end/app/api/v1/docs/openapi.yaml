@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: AshBourne SCMS - Backend API Documentation
+  version: 1.0.0
+  description: API documentation for the AshBourne SCMS - Backend API
+  contact:
+    name: API Support
+    email: support@ashbourne.com
+servers:
+  - url: /v1
+    description: API Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error type identifier
+        message:
+          type: string
+          description: Human readable error message
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+        firebaseUid:
+          type: string
+          description: Firebase User ID
+        firstName:
+          type: string
+          description: User's first name
+        lastName:
+          type: string
+          description: User's last name
+        email:
+          type: string
+          format: email
+          description: User's email address
+        role:
+          type: integer
+          description: >
+                  User role:
+                  * 0 - Terminated
+                  * 1 - Admin
+                  * 2 - Coordinator
+                  * 3 - Lecturer
+                  * 4 - Student
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Module:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Module ID
+        title:
+          type: string
+          description: Module title
+        description:
+          type: string
+          description: Module description
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+security:
+  - BearerAuth: [] 

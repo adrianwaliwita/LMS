@@ -1,6 +1,6 @@
-import { auth } from '../../firebase/firebase-admin.js';
-import config from '../../utils/config.js';
-import logger from '../../utils/logger.js';
+import { auth } from '../../../firebase/firebase-admin.js';
+import config from '../../../utils/config.js';
+import logger from '../../../utils/logger.js';
 /**
  * Middleware to verify Firebase ID token
  * Expects the ID token in the Authorization header as 'Bearer <token>'

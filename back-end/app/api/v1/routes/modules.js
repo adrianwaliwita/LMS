@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listModules, getModuleById, createModule, updateModule, deleteModule } from '../../controllers/module.js';
+import { listModules, getModuleById, createModule, updateModule, deleteModule } from '../../../controllers/module.js';
 
 const modulesRouter = Router();
 

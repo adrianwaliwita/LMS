@@ -2,7 +2,7 @@ import { auth as clientAuth } from '../firebase/firebase-client.js';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import logger from '../utils/logger.js';
 
-export const login = async (req, res) => {
+export const auth = async (req, res) => {
     const { email, password } = req.body;
 
     // Check if email and password are strings and not empty
@@ -19,12 +19,23 @@ export const login = async (req, res) => {
         const userCredential = await signInWithEmailAndPassword(clientAuth, email, password);
 
         // Get the ID token
-        const idToken = await userCredential.user.getIdToken();
+        const idToken = await userCredential.user.getIdTokenResult();
 
-        logger.info(`[login] User logged in successfully: '${email}'`);
-        res.json({ uid: userCredential.user.uid, idToken });
+        logger.info(`[auth] User authenticated successfully: '${email}'`);
+        res.json({ 
+            token: idToken.token,
+            user: {
+                systemId: idToken.claims.systemId,
+                firebaseUid: userCredential.user.uid,
+                email: userCredential.user.email,
+                role: idToken.claims.role
+            }
+        });
     } catch (error) {
-        logger.error(`[login] Login failed for email '${email}'. Error: ${error.message}`);
-        res.status(401).json({ error: "Invalid credentials", details: error.toString() });
+        logger.error(`[auth] Authentication failed for email '${email}'. Error: ${error.message}`);
+        res.status(401).json({ 
+            error: "Invalid credentials", 
+            message: error.toString() 
+        });
     }
 };
