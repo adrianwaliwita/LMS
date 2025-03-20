@@ -12,7 +12,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const menu = {
     admin: [
       { name: "Home", path: "/dashboard" },
-      { name: "User Management", path: "/user-management" },
+      { name: "Manage Users", path: "/manage-users" },
+
       { name: "Events", path: "/events" },
       { name: "Reports", path: "/reports" },
       { name: "Chat", path: "/Chat" },
@@ -26,8 +27,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     ],
     coordinator: [
       { name: "Home", path: "/dashboard" },
-      { name: "Approve Events", path: "/events" },
-      { name: "Resource Management", path: "/resources" },
+      { name: "Manage Resources", path: "/manage-resources" },
       { name: "Announcements", path: "/announcements" },
       { name: "Chat", path: "/Chat" },
     ],

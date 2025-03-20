@@ -13,12 +13,14 @@ export const AuthProvider = ({ children }) => {
     let role = "";
 
     // Example credentials (to be replaced with real API or DB check)
-    if (email === "admin@example.com" && password === "p123") {
+    if (email === "admin@example.com" && password === "123") {
       role = "admin";
-    } else if (email === "lecturer@example.com" && password === "p123") {
+    } else if (email === "lecturer@example.com" && password === "123") {
       role = "lecturer";
     } else if (email === "student@example.com" && password === "123") {
       role = "student";
+    } else if (email === "coord@example.com" && password === "123") {
+      role = "coordinator";
     }
 
     // If role is valid, set the user

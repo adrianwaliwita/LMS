@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import Sidebar from "../components/Sidebar";
-import NavlayOut from "../layout/NavLayout";
 
 const AssignmentSubmission = () => {
   const [assignments, setAssignments] = useState([
