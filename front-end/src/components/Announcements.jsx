@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
+import axios from "axios";
+
+const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState([]);
@@ -9,53 +12,17 @@ function AnnouncementsPage() {
   const [swiperInstance, setSwiperInstance] = useState(null);
 
   useEffect(() => {
-    // Simulated fetch of announcements
-    const fetchAnnouncements = async () => {
-      try {
-        // Replace this with an actual API call
-        const mockAnnouncements = [
-          {
-            id: 1,
-            title: "Spring Semester Registration Opens",
-            date: "2024-03-15",
-            description:
-              "Registration for the upcoming spring semester will begin on March 20th. Please check your student portal for specific details and important dates.",
-            category: "Academic",
-          },
-          {
-            id: 2,
-            title: "Campus Career Fair Updates",
-            date: "2024-04-02",
-            description:
-              "Join us for the annual campus career fair featuring top employers from various industries. Networking and interview opportunities available.",
-            category: "Career",
-          },
-          {
-            id: 3,
-            title: "Research Symposium Call for Papers",
-            date: "2024-03-22",
-            description:
-              "Calling all researchers! Submit your research papers for the upcoming university research symposium. Deadline is April 15th.",
-            category: "Research",
-          },
-          {
-            id: 4,
-            title: "Additional Announcement",
-            date: "2024-03-22",
-            description: "Additional announcement details go here.",
-            category: "General",
-          },
-        ];
-
-        setAnnouncements(mockAnnouncements);
+    axios
+      .get(`${baseUrl}/announcements`)
+      .then((response) => {
+        setAnnouncements(response.data);
         setIsLoading(false);
-      } catch (err) {
-        setError("Failed to fetch announcements");
-        setIsLoading(false);
-      }
-    };
-
-    fetchAnnouncements();
+      })
+      .catch((error) => {
+        setLoading(false);
+        console.error("Error fetching announcements:", error);
+        setLoading(false);
+      });
   }, []);
 
   if (isLoading) {

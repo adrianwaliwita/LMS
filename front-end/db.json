@@ -1,0 +1,316 @@
+{
+  "users": [
+    {
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "password": "123",
+
+      "role": "admin",
+      "department": "Computer Science",
+      "id": "usr1"
+    },
+    {
+      "id": "usr2",
+      "name": "John Smith",
+      "email": "student@example.com",
+      "password": "123",
+      "department": "Computer Science",
+      "role": "student",
+      "isActive": true,
+      "passwordResetRequired": true,
+      "createdAt": "2025-01-15T10:30:00Z",
+      "updatedAt": "2025-01-15T10:30:00Z",
+      "lastLogin": null,
+      "SubjectIDs": ["mod1", "mod3"]
+    },
+    {
+      "id": "usr3",
+      "name": "Sarah Johnson",
+      "email": "coord@example.com",
+      "password": "123",
+      "department": "Computer Science",
+      "role": "coordinator",
+      "isActive": true,
+      "passwordResetRequired": true,
+      "createdAt": "2025-01-20T14:15:00Z",
+      "updatedAt": "2025-01-20T14:15:00Z",
+      "lastLogin": "2025-03-18T11:22:45Z"
+    },
+    {
+      "id": "usr4",
+      "name": "Sarah Johnson",
+      "email": "lecturer@example.com",
+      "password": "123",
+      "department": "Computer Science",
+      "role": "coordinator",
+      "isActive": true,
+      "passwordResetRequired": true,
+      "createdAt": "2025-01-20T14:15:00Z",
+      "updatedAt": "2025-01-20T14:15:00Z",
+      "lastLogin": "2025-03-18T11:22:45Z"
+    },
+    {
+      "id": "afa4",
+      "name": "Alex Johnson",
+      "email": "adadada@gmail.com",
+      "role": "student",
+      "department": "Computer Science",
+      "batch": "Batch A"
+    },
+    {
+      "id": "d8ff",
+      "name": "Adrian Waliwita",
+      "email": "adwaliwita@gmail.com",
+      "role": "student",
+      "department": "Computer Science"
+    }
+  ],
+
+  "subjects": [
+    {
+      "id": "mod1",
+      "name": "Introduction to Programming",
+      "description": "Basic concepts of programming using Python",
+      "credits": 4,
+      "time": "Monday 9:00 AM - 11:00 AM",
+      "location": "Computer Lab A",
+
+      "isActive": true,
+      "createdAt": "2025-01-01T10:00:00Z",
+      "updatedAt": "2025-01-01T10:00:00Z"
+    },
+    {
+      "id": "mod2",
+      "name": "Web Design ",
+      "description": "HTML, CSS and basic JavaScript",
+      "credits": 3,
+      "time": "Monday 9:00 AM - 11:00 AM",
+      "location": "Computer Lab A",
+
+      "isActive": true,
+      "createdAt": "2025-01-01T10:15:00Z",
+      "updatedAt": "2025-01-01T10:15:00Z"
+    },
+    {
+      "id": "mod3",
+      "name": "Database Design",
+      "description": "Relational database design and SQL",
+      "credits": 4,
+      "time": "Monday 9:00 AM - 11:00 AM",
+      "location": "Computer Lab A",
+
+      "isActive": true,
+      "createdAt": "2025-01-01T10:30:00Z",
+      "updatedAt": "2025-01-01T10:30:00Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": "crs1",
+      "name": "Software Development",
+      "description": "Complete software development course covering programming, web and databases",
+      "moduleIds": ["mod1", "mod2", "mod3"],
+      "totalCredits": 11,
+      "isActive": true,
+      "createdAt": "2025-01-05T11:00:00Z",
+      "updatedAt": "2025-01-05T11:00:00Z"
+    },
+    {
+      "id": "crs2",
+      "name": "Web Design",
+      "description": "Focused course on web technologies and design principles",
+      "moduleIds": ["mod2"],
+      "totalCredits": 3,
+      "isActive": true,
+      "createdAt": "2025-01-05T11:30:00Z",
+      "updatedAt": "2025-01-05T11:30:00Z"
+    }
+  ],
+  "batches": [
+    {
+      "id": "bat1",
+      "courseId": "crs1",
+      "name": "SD2025-Spring",
+      "startDate": "2025-02-15",
+      "endDate": "2025-06-15",
+      "isActive": true,
+      "createdAt": "2025-01-10T13:00:00Z",
+      "updatedAt": "2025-01-10T13:00:00Z"
+    },
+    {
+      "id": "bat2",
+      "courseId": "crs2",
+      "name": "WD2025-Spring",
+      "startDate": "2025-02-20",
+      "endDate": "2025-05-20",
+      "isActive": true,
+      "createdAt": "2025-01-10T13:30:00Z",
+      "updatedAt": "2025-01-10T13:30:00Z"
+    }
+  ],
+  "classrooms": [
+    {
+      "id": "room1",
+      "name": "Main Hall",
+      "capacity": 100,
+      "hasProjector": true,
+      "hasWhiteboard": true,
+      "hasComputers": false,
+      "computerCount": 0,
+      "isActive": true,
+      "createdAt": "2025-01-02T09:00:00Z",
+      "updatedAt": "2025-01-02T09:00:00Z"
+    },
+    {
+      "id": "room2",
+      "name": "Computer Lab A",
+      "capacity": 30,
+      "hasProjector": true,
+      "hasWhiteboard": true,
+      "hasComputers": true,
+      "computerCount": 30,
+      "isActive": true,
+      "createdAt": "2025-01-02T09:15:00Z",
+      "updatedAt": "2025-01-02T09:15:00Z"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "eq1",
+      "name": "Portable Projector",
+      "description": "HD projector with HDMI and USB connections",
+      "isAvailable": true,
+      "lastMaintenance": "2025-01-15",
+      "nextMaintenance": "2025-04-15",
+      "isActive": true,
+      "createdAt": "2025-01-03T10:00:00Z",
+      "updatedAt": "2025-01-03T10:00:00Z"
+    },
+    {
+      "id": "eq2",
+      "name": "Wireless Microphone Set",
+      "description": "Set of 2 wireless microphones with receiver",
+      "isAvailable": true,
+      "lastMaintenance": "2025-01-20",
+      "nextMaintenance": "2025-04-20",
+      "isActive": true,
+      "createdAt": "2025-01-03T10:15:00Z",
+      "updatedAt": "2025-01-03T10:15:00Z"
+    }
+  ],
+  "lectures": [
+    {
+      "id": "lec1",
+      "courseId": "crs1",
+      "batchId": "bat1",
+      "moduleId": "mod1",
+      "lecturerId": "usr2",
+      "roomId": "room2",
+      "title": "Introduction to Python",
+      "description": "First lecture covering Python basics",
+      "date": "2025-02-16",
+      "startTime": "09:00",
+      "endTime": "11:00",
+      "equipmentIds": ["eq1"],
+      "materialIds": ["mat1"],
+      "isCancelled": false,
+      "createdAt": "2025-02-01T13:00:00Z",
+      "updatedAt": "2025-02-01T13:00:00Z"
+    }
+  ],
+  "lectureMaterials": [
+    {
+      "id": "mat1",
+      "lectureId": "lec1",
+      "title": "Python Basics Slides",
+      "description": "Presentation slides for the introduction to Python",
+      "fileUrl": "files/python_basics_slides.pdf",
+      "fileType": "application/pdf",
+      "fileSize": 2458632,
+      "uploadedBy": "usr2",
+      "createdAt": "2025-02-15T15:30:00Z",
+      "updatedAt": "2025-02-15T15:30:00Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt1",
+      "title": "Programming Workshop",
+      "description": "Hands-on workshop for Python programming",
+      "type": "Workshop",
+      "date": "2025-03-10",
+      "startTime": "14:00",
+      "endTime": "17:00",
+      "roomId": "room2",
+      "createdBy": "usr3",
+      "attendees": {
+        "lecturerIds": ["usr2"],
+        "coordinatorIds": ["usr3"],
+        "batchIds": ["bat1"]
+      },
+      "isCancelled": false,
+      "createdAt": "2025-02-20T11:00:00Z",
+      "updatedAt": "2025-02-20T11:00:00Z"
+    }
+  ],
+  "assignments": [
+    {
+      "id": "asg1",
+      "moduleId": "mod1",
+      "batchId": "bat1",
+      "title": "Python Basics Assignment",
+      "description": "Create a simple calculator program using Python",
+      "dueDate": "2025-03-01",
+      "maxScore": 100,
+      "createdBy": "usr3",
+      "createdAt": "2025-02-17T10:00:00Z",
+      "updatedAt": "2025-02-17T10:00:00Z"
+    }
+  ],
+  "assignmentSubmissions": [
+    {
+      "id": "sub1",
+      "assignmentId": "asg1",
+      "studentId": "usr4",
+      "submissionDate": "2025-02-28T15:45:00Z",
+      "fileUrl": "submissions/usr4_asg1_calculator.py",
+      "comments": "Completed with extra credit features",
+      "score": 95,
+      "feedback": "Excellent work! Clean code and good documentation.",
+      "gradedBy": "usr2",
+      "gradedAt": "2025-03-02T11:20:00Z",
+      "createdAt": "2025-02-28T15:45:00Z",
+      "updatedAt": "2025-03-02T11:20:00Z"
+    }
+  ],
+  "announcements": [
+    {
+      "id": 1,
+      "title": "Spring Semester Registration Opens",
+      "date": "2024-03-15",
+      "description": "Registration for the upcoming spring semester will begin on March 20th. Please check your student portal for specific details and important dates.",
+      "category": "Academic"
+    },
+    {
+      "id": 2,
+      "title": "Campus Career Fair Updates",
+      "date": "2024-04-02",
+      "description": "Join us for the annual campus career fair featuring top employers from various industries. Networking and interview opportunities available.",
+      "category": "Career"
+    },
+    {
+      "id": 3,
+      "title": "Research Symposium Call for Papers",
+      "date": "2024-03-22",
+      "description": "Calling all researchers! Submit your research papers for the upcoming university research symposium. Deadline is April 15th.",
+      "category": "Research"
+    },
+    {
+      "id": 4,
+      "title": "Additional Announcement",
+      "date": "2024-03-22",
+      "description": "Additional announcement details go here.",
+      "category": "General"
+    }
+  ]
+}

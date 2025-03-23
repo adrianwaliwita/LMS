@@ -6,7 +6,6 @@ import Logo from "/SMSC.png";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useAuth();
-
   if (!user) return null;
 
   const menu = {
@@ -14,8 +13,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       { name: "Home", path: "/dashboard" },
       { name: "Manage Users", path: "/manage-users" },
 
-      { name: "Events", path: "/events" },
-      { name: "Reports", path: "/reports" },
+      { name: "Manage Batch/Courses", path: "/manage-batch-courses" },
       { name: "Chat", path: "/Chat" },
     ],
     lecturer: [
@@ -27,13 +25,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     ],
     coordinator: [
       { name: "Home", path: "/dashboard" },
+      { name: "Manage Subjects", path: "/manage-subjects" },
       { name: "Manage Resources", path: "/manage-resources" },
+
       { name: "Announcements", path: "/announcements" },
       { name: "Chat", path: "/Chat" },
     ],
     student: [
       { name: "Home", path: "/dashboard" },
-      { name: "My Courses", path: "/courses" },
+      { name: "My Subjects", path: "/subjects" },
       { name: "Assignments", path: "/assignment" },
       { name: "Profile Settings", path: "/profile" },
       { name: "Chat", path: "/Chat" },
@@ -56,7 +56,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} 
           ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"}`}
       >
-        {/* Close button (arrow) - only on mobile when sidebar is open */}
         {isOpen && (
           <button
             className="absolute top-4 right-4 text-white text-3xl md:hidden"
@@ -88,12 +87,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       </div>
 
       {/* Main content area - with right navbar */}
-      <div className="flex-1 ml-0 md:ml-60">
-        {" "}
-        {/* Add margin to offset the fixed sidebar on desktop */}
-        {/* Fixed top navbar with right content */}
-        {/* Scrollable content */}
-      </div>
+      <div className="flex-1 ml-0 md:ml-60"> </div>
     </div>
   );
 };

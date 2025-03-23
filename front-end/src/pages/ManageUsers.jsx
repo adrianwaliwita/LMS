@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import axios from "axios";
+
+const baseUrl = import.meta.env.VITE_BASE_URL;
 
 const UserManagement = () => {
   const { user } = useAuth();
@@ -14,63 +17,20 @@ const UserManagement = () => {
     email: "",
     role: "student",
     department: "",
-    status: "active",
   });
 
-  // Mock data - in a real app, this would come from an API
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setUsers([
-        {
-          id: 1,
-          name: "Jane Smith",
-          email: "jane.smith@university.edu",
-          role: "coordinator",
-          department: "Administration",
-          status: "active",
-          lastLogin: "2025-03-12T09:15:00",
-        },
-        {
-          id: 2,
-          name: "John Doe",
-          email: "john.doe@university.edu",
-          role: "professor",
-          department: "Computer Science",
-          status: "active",
-          lastLogin: "2025-03-13T14:30:00",
-        },
-        {
-          id: 3,
-          name: "Alice Johnson",
-          email: "alice.johnson@university.edu",
-          role: "student",
-          department: "Physics",
-          status: "active",
-          lastLogin: "2025-03-10T11:45:00",
-        },
-        {
-          id: 4,
-          name: "Robert Chen",
-          email: "robert.chen@university.edu",
-          role: "student",
-          department: "Mathematics",
-          status: "inactive",
-          lastLogin: "2025-02-28T16:20:00",
-        },
-        {
-          id: 5,
-          name: "Sarah Williams",
-          email: "sarah.williams@university.edu",
-          role: "professor",
-          department: "Biology",
-          status: "active",
-          lastLogin: "2025-03-11T08:50:00",
-        },
-      ]);
-      setLoading(false);
-    }, 800);
-  }, []);
+    axios
+      .get(`${baseUrl}/users`)
+      .then((response) => {
+        setUsers(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+        setLoading(false);
+      });
+  }, []); //fetch on mount
 
   // Only allow admin access
   if (user?.role !== "admin") {
@@ -93,21 +53,23 @@ const UserManagement = () => {
 
   const handleAddUser = (e) => {
     e.preventDefault();
-    const userToAdd = {
-      ...newUser,
-      id: Date.now(),
-      lastLogin: null,
-    };
-    setUsers([...users, userToAdd]);
-    setNewUser({
-      name: "",
-      email: "",
-      role: "student",
-      department: "",
-      status: "active",
-    });
-    setShowForm(false);
-  };
+    axios
+      .post("http://localhost:5000/users", newUser)
+      .then((response) => {
+        setUsers([...users, response.data]);
+        setNewUser({
+          name: "",
+          email: "",
+          role: "student",
+          department: "",
+        });
+        setShowForm(false);
+        console.log(response.data);
+      })
+      .catch((error) => {
+        console.error("Error adding user:", error);
+      });
+  }; //add new user
 
   const handleEditUser = (id) => {
     const userToEdit = users.find((user) => user.id === id);
@@ -116,7 +78,6 @@ const UserManagement = () => {
       email: userToEdit.email,
       role: userToEdit.role,
       department: userToEdit.department,
-      status: userToEdit.status,
     });
     setEditingId(id);
     setShowForm(true);
@@ -124,28 +85,37 @@ const UserManagement = () => {
 
   const handleUpdateUser = (e) => {
     e.preventDefault();
-    const updatedUsers = users.map((user) =>
-      user.id === editingId
-        ? {
-            ...user,
-            name: newUser.name,
-            email: newUser.email,
-            role: newUser.role,
-            department: newUser.department,
-            status: newUser.status,
-          }
-        : user
-    );
-    setUsers(updatedUsers);
-    setNewUser({
-      name: "",
-      email: "",
-      role: "student",
-      department: "",
-      status: "active",
-    });
-    setEditingId(null);
-    setShowForm(false);
+
+    // Prepare the updated user data
+    const updatedUser = {
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      department: newUser.department,
+    };
+
+    axios
+      .put(`${baseUrl}/users/${editingId}`, updatedUser)
+      .then((response) => {
+        // Update the state with the updated user information
+        const updatedUsers = users.map((user) =>
+          user.id === editingId ? { ...user, ...updatedUser } : user
+        );
+        setUsers(updatedUsers);
+
+        // Clear the form and hide it
+        setNewUser({
+          name: "",
+          email: "",
+          role: "student",
+          department: "",
+        });
+        setEditingId(null);
+        setShowForm(false);
+      })
+      .catch((error) => {
+        console.error("Error updating user:", error);
+      });
   };
 
   const handleDeleteUser = (id) => {
@@ -153,7 +123,14 @@ const UserManagement = () => {
       "Are you sure you want to delete this user? This action cannot be undone."
     );
     if (confirmed) {
-      setUsers(users.filter((user) => user.id !== id));
+      axios
+        .delete(`${baseUrl}/users/${id}`)
+        .then(() => {
+          setUsers(users.filter((user) => user.id !== id));
+        })
+        .catch((error) => {
+          console.error("Error deleting user:", error);
+        });
     }
   };
 
@@ -183,9 +160,9 @@ const UserManagement = () => {
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.department.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.department || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === "all" || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
@@ -300,9 +277,6 @@ const UserManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Status
-                </label>
                 <select
                   name="status"
                   value={newUser.status}
@@ -378,12 +352,6 @@ const UserManagement = () => {
                 >
                   Department
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
 
                 <th
                   scope="col"
@@ -425,32 +393,8 @@ const UserManagement = () => {
                       {user.department}
                     </div>
                   </td>
-                  <td className="px-4 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${
-                        user.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {user.status.charAt(0).toUpperCase() +
-                        user.status.slice(1)}
-                    </span>
-                  </td>
 
                   <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleToggleStatus(user.id)}
-                      className={`mr-2 px-2 py-1 rounded text-xs font-medium 
-                        ${
-                          user.status === "active"
-                            ? "bg-red-100 text-red-700 hover:bg-red-200"
-                            : "bg-green-100 text-green-700 hover:bg-green-200"
-                        }`}
-                    >
-                      {user.status === "active" ? "Deactivate" : "Activate"}
-                    </button>
                     <button
                       onClick={() => handleEditUser(user.id)}
                       className="text-blue-600 hover:text-blue-900 mr-2"
@@ -469,110 +413,6 @@ const UserManagement = () => {
             </tbody>
           </table>
         )}
-      </div>
-
-      {/* Bulk Actions and Statistics */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border-2 border-blue-700 p-4 rounded-lg shadow text-black">
-          <h3 className="font-bold mb-2">User Statistics</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Total Users:</span>
-              <span className="font-medium">{users.length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Active Users:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.status === "active").length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Inactive Users:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.status === "inactive").length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border-2 border-blue-700 p-4 rounded-lg shadow text-black">
-          <h3 className="font-bold mb-2">Role Distribution</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Admins:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.role === "admin").length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Coordinators:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.role === "coordinator").length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Professors:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.role === "professor").length}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Students:</span>
-              <span className="font-medium">
-                {users.filter((u) => u.role === "student").length}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border-2 border-blue-700 p-4 rounded-lg shadow text-black">
-          <h3 className="font-bold mb-2">Bulk Actions</h3>
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Are you sure you want to export ${filteredUsers.length} users?`
-                  )
-                ) {
-                  alert("Export functionality would be implemented here");
-                }
-              }}
-              className="w-full bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200"
-            >
-              Export Selected Users
-            </button>
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to send an email to all selected users?"
-                  )
-                ) {
-                  alert("Email functionality would be implemented here");
-                }
-              }}
-              className="w-full bg-green-100 text-green-700 px-4 py-2 rounded hover:bg-green-200"
-            >
-              Email Selected Users
-            </button>
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to deactivate all inactive users who haven't logged in for 30+ days?"
-                  )
-                ) {
-                  // In a real app, implement this logic with real dates
-                  alert("Account deactivation would be implemented here");
-                }
-              }}
-              className="w-full bg-yellow-100 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-200"
-            >
-              Deactivate Dormant Accounts
-            </button>
-          </div>
-        </div>
       </div>
     </>
   );

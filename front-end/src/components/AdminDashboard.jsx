@@ -1,20 +1,28 @@
 import React from "react";
 import Announcements from "./Announcements";
+import axios from "axios";
+import { useState, useEffect } from "react";
+
+const baseUrl = import.meta.env.VITE_BASE_URL;
 
 const ManageUsers = () => {
   // Mock data for users
-  const users = [
-    { id: 1, name: "John Doe", role: "admin", status: "active" },
-    { id: 2, name: "Jane Smith", role: "coordinator", status: "active" },
-    { id: 3, name: "Bob Johnson", role: "professor", status: "inactive" },
-    { id: 4, name: "Alice Williams", role: "student", status: "active" },
-    { id: 5, name: "Michael Brown", role: "student", status: "active" },
-    { id: 6, name: "Sarah Davis", role: "student", status: "inactive" },
-    { id: 7, name: "David Wilson", role: "professor", status: "active" },
-    { id: 8, name: "Emily Taylor", role: "coordinator", status: "active" },
-    { id: 9, name: "James Miller", role: "student", status: "active" },
-    { id: 10, name: "Jennifer Anderson", role: "professor", status: "active" },
-  ];
+  const [users, setUsers] = useState([]); // State to store fetched users
+  const [loading, setLoading] = useState(true); // State to handle loading
+
+  useEffect(() => {
+    // Fetching the users from the API
+    axios
+      .get(`${baseUrl}/users`)
+      .then((response) => {
+        setUsers(response.data); // Store fetched users in state
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching users:", error);
+        setLoading(false); // Stop loading in case of error
+      });
+  }, []); // Fetch data when component mounts
 
   return (
     <>

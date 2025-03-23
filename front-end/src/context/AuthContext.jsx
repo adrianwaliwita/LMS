@@ -1,6 +1,8 @@
 import { createContext, useContext, useState } from "react";
+import axios from "axios";
 
 const AuthContext = createContext();
+const baseUrl = import.meta.env.VITE_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -9,28 +11,37 @@ export const AuthProvider = ({ children }) => {
   });
 
   const login = async (email, password) => {
-    // Simulate login logic (you can replace this with actual backend validation)
-    let role = "";
+    try {
+      // Query the JSON server specifically for the user with this email
+      const response = await axios.get(`${baseUrl}/users?email=${email}`);
 
-    // Example credentials (to be replaced with real API or DB check)
-    if (email === "admin@example.com" && password === "123") {
-      role = "admin";
-    } else if (email === "lecturer@example.com" && password === "123") {
-      role = "lecturer";
-    } else if (email === "student@example.com" && password === "123") {
-      role = "student";
-    } else if (email === "coord@example.com" && password === "123") {
-      role = "coordinator";
-    }
+      // Check if we found any users with this email
+      if (response.data.length === 0) {
+        console.log("No user found with this email");
+        return false;
+      }
 
-    // If role is valid, set the user
-    if (role) {
-      setUser({ email, role });
-      localStorage.setItem("user", JSON.stringify({ email, role }));
+      const foundUser = response.data[0];
+
+      // If the user has a password field, validate it
+      if (foundUser.password && foundUser.password !== password) {
+        console.log("Password incorrect");
+        return false;
+      }
+
+      // Login successful
+      console.log("Login successful", foundUser);
+
+      const { password: _, ...userWithoutPassword } = foundUser;
+
+      setUser(userWithoutPassword);
+      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
+
       return true;
+    } catch (error) {
+      console.error("Login error:", error);
+      return false;
     }
-
-    return false;
   };
 
   const logout = () => {
