@@ -1,43 +1,60 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { FaArrowLeft } from "react-icons/fa";
 import Logo from "/SMSC.png";
+import { useNavigate } from "react-router-dom"; // For navigation
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate(); // Get navigate function from useNavigate hook
+
   if (!user) return null;
 
   const menu = {
     admin: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage Users", path: "/manage-users" },
+      { name: "Manage Users", path: "/manage-users" }, //during student creation student can be assigned to a batch
+      //leturer subjects has to be assigned to the lecturers
 
-      { name: "Manage Batch/Courses", path: "/manage-batch-courses" },
-      { name: "Chat", path: "/Chat" },
+      { name: "Manage Batches", path: "/manage-batches" }, //admin can make and manage batches
+      { name: "Manage Courses", path: "/manage-courses" }, //admin can make and manage Courses
+
+      { name: "Manage Resources", path: "/manage-resources" }, //can create resources and classrooms
+      { name: "Manage Subjects", path: "/manage-subjects" }, //can create resources and classrooms
+      { name: "Profile Settings", path: "/profile" },
+
+      { name: "Profile Settings", path: "/profile" },
     ],
+
     lecturer: [
       { name: "Home", path: "/dashboard" },
-      { name: "Schedule Classes", path: "/scheduling" },
-      { name: "Manage Assignments", path: "/assignment" },
-      { name: "Messages", path: "/messages" },
-      { name: "Chat", path: "/Chat" },
+      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to subjects from students all documents are uploaded from the coordinator
+      { name: "Profile Settings", path: "/profile" },
     ],
+
     coordinator: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Subjects", path: "/manage-subjects" },
-      { name: "Manage Resources", path: "/manage-resources" },
-
+      { name: "Manage Students", path: "/manage-users" }, //during student creation student can be assigned to a batch
+      { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
+      { name: "Manage Lecture Scheduling & Resources", path: "/assignment" }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the subject, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
       { name: "Announcements", path: "/announcements" },
-      { name: "Chat", path: "/Chat" },
+
+      { name: "Profile Settings", path: "/profile" },
     ],
+
     student: [
       { name: "Home", path: "/dashboard" },
-      { name: "My Subjects", path: "/subjects" },
-      { name: "Assignments", path: "/assignment" },
+      { name: "My Subjects", path: "/subjects" }, //show schedules of the student
+      { name: "Submit Assignments", path: "/assignment" },
+
       { name: "Profile Settings", path: "/profile" },
-      { name: "Chat", path: "/Chat" },
     ],
+  };
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   return (
@@ -80,6 +97,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               </Link>
             </li>
           ))}
+          <li className="mb-2 ">
+            <button
+              onClick={handleLogout}
+              className="block p-2 hover:bg-red-700 hover:text-white text-red-600 rounded transition duration-200"
+            >
+              Logout
+            </button>
+          </li>
         </ul>
         <div className="flex justify-center mt-auto pt-8">
           <img src={Logo} alt="Logo" className="w-30 h-30" />

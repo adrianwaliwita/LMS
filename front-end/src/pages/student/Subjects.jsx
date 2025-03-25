@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "../../components/Sidebar";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext"; // Import your auth context
+import { useAuth } from "../../context/AuthContext"; // Import your auth context
 
 const baseUrl = import.meta.env.VITE_BASE_URL;
 
 const Subjects = () => {
   const { user } = useAuth(); // Get the current logged-in user
-  console.log("User in Subjects component:", user);
 
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);

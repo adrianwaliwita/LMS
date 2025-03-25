@@ -62,6 +62,14 @@ const AssignmentSubmission = () => {
     });
   };
 
+  const handleDownload = () => {
+    if (selectedAssignment && selectedAssignment.briefUrl) {
+      window.open(selectedAssignment.briefUrl, "_blank");
+    } else {
+      alert("Assignment brief is not available for download");
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "Submitted":
@@ -96,6 +104,7 @@ const AssignmentSubmission = () => {
                   <h3 className="text-lg font-semibold text-blue-700">
                     {assignment.title}
                   </h3>
+
                   <p className="text-gray-700 mt-2">{assignment.course}</p>
                   <p
                     className={`${getStatusColor(
@@ -123,6 +132,29 @@ const AssignmentSubmission = () => {
                 <span className="font-semibold">Course:</span>{" "}
                 {selectedAssignment.course}
               </p>
+
+              <button
+                className=" mr-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                onClick={handleDownload}
+              >
+                <span className="flex items-center">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  Download Brief
+                </span>
+              </button>
+
               <p className="pb-2 border-b border-gray-200">
                 <span className="font-semibold">Due Date:</span>{" "}
                 {selectedAssignment.dueDate}

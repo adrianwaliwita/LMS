@@ -1,12 +1,11 @@
 {
   "users": [
     {
-      "name": "Admin User",
+      "name": "Shane User",
       "email": "admin@example.com",
-      "password": "123",
-
       "role": "admin",
-      "department": "Computer Science",
+      "departmentId": "D1",
+      "updatedAt": "2025-03-25T11:20:28.508Z",
       "id": "usr1"
     },
     {
@@ -14,21 +13,27 @@
       "name": "John Smith",
       "email": "student@example.com",
       "password": "123",
-      "department": "Computer Science",
+      "departmentId": "D2",
       "role": "student",
       "isActive": true,
       "passwordResetRequired": true,
       "createdAt": "2025-01-15T10:30:00Z",
       "updatedAt": "2025-01-15T10:30:00Z",
       "lastLogin": null,
-      "SubjectIDs": ["mod1", "mod3"]
+      "SubjectIDs": [
+        "mod1",
+        "mod3"
+      ],
+      "batchId": "bat1"
     },
     {
       "id": "usr3",
       "name": "Sarah Johnson",
       "email": "coord@example.com",
       "password": "123",
-      "department": "Computer Science",
+      "departmentId": [
+        "D1"
+      ],
       "role": "coordinator",
       "isActive": true,
       "passwordResetRequired": true,
@@ -62,22 +67,60 @@
       "name": "Adrian Waliwita",
       "email": "adwaliwita@gmail.com",
       "role": "student",
-      "department": "Computer Science"
+      "department": "Computer Science",
+      "batchId": null
+    },
+    {
+      "id": "usr5",
+      "name": "Dr. Emily Carter",
+      "email": "emily.carter@example.com",
+      "password": "123",
+      "role": "lecturer",
+      "departmentId": "D1",
+      "SubjectIDs": [
+        "mod1",
+        "mod3"
+      ],
+      "courseIds": [
+        "crs1"
+      ]
+    },
+    {
+      "id": "be81",
+      "name": "Adrian",
+      "email": "adwaliwita@gmail.com",
+      "role": "student",
+      "departmentId": "D1",
+      "batchId": "bat3"
+    },
+    {
+      "id": "5d0c",
+      "name": "asmitha bandara",
+      "email": "lecturer@example.com",
+      "role": "lecturer",
+      "departmentId": "D1",
+      "createdAt": "2025-03-25T10:10:51.432Z",
+      "updatedAt": "2025-03-25T10:10:51.432Z"
+    },
+    {
+      "id": "7d39",
+      "name": "Adrian",
+      "email": "dpnetflix700@gmail.com",
+      "role": "coordinator",
+      "departmentId": "D1",
+      "createdAt": "2025-03-25T11:20:19.075Z",
+      "updatedAt": "2025-03-25T11:20:19.075Z"
     }
   ],
-
   "subjects": [
     {
       "id": "mod1",
       "name": "Introduction to Programming",
       "description": "Basic concepts of programming using Python",
       "credits": 4,
+      "courseId": "crs1",
       "time": "Monday 9:00 AM - 11:00 AM",
-      "location": "Computer Lab A",
-
-      "isActive": true,
-      "createdAt": "2025-01-01T10:00:00Z",
-      "updatedAt": "2025-01-01T10:00:00Z"
+      "location": "Computer Lab A"
     },
     {
       "id": "mod2",
@@ -86,7 +129,6 @@
       "credits": 3,
       "time": "Monday 9:00 AM - 11:00 AM",
       "location": "Computer Lab A",
-
       "isActive": true,
       "createdAt": "2025-01-01T10:15:00Z",
       "updatedAt": "2025-01-01T10:15:00Z"
@@ -98,7 +140,6 @@
       "credits": 4,
       "time": "Monday 9:00 AM - 11:00 AM",
       "location": "Computer Lab A",
-
       "isActive": true,
       "createdAt": "2025-01-01T10:30:00Z",
       "updatedAt": "2025-01-01T10:30:00Z"
@@ -107,40 +148,90 @@
   "courses": [
     {
       "id": "crs1",
-      "name": "Software Development",
+      "name": "Cat Development",
       "description": "Complete software development course covering programming, web and databases",
-      "moduleIds": ["mod1", "mod2", "mod3"],
-      "totalCredits": 11,
       "isActive": true,
       "createdAt": "2025-01-05T11:00:00Z",
-      "updatedAt": "2025-01-05T11:00:00Z"
+      "updatedAt": "2025-03-24T17:09:06.069Z",
+      "BatchIds": [
+        "bat3"
+      ]
     },
     {
-      "id": "crs2",
-      "name": "Web Design",
-      "description": "Focused course on web technologies and design principles",
-      "moduleIds": ["mod2"],
-      "totalCredits": 3,
+      "id": "crs545",
+      "name": "Meow Development",
+      "description": "Complete software development course covering programming, web and databases",
       "isActive": true,
-      "createdAt": "2025-01-05T11:30:00Z",
-      "updatedAt": "2025-01-05T11:30:00Z"
+      "createdAt": "2025-01-05T11:00:00Z",
+      "updatedAt": "2025-03-24T14:48:14.547Z"
+    },
+    {
+      "id": "ff10",
+      "name": "Business Analytics",
+      "description": "Meow meow",
+      "SubjectIds": [
+        "mod1",
+        "mod2",
+        "mod3"
+      ],
+      "BatchIds": [
+        "bat2",
+        "bat3"
+      ],
+      "totalCredits": 11,
+      "isActive": true,
+      "createdAt": "2025-03-24T15:09:25.484Z",
+      "updatedAt": "2025-03-24T15:09:25.484Z"
+    },
+    {
+      "id": "e63a",
+      "name": "meow 101",
+      "description": "",
+      "SubjectIds": [
+        "mod1",
+        "mod2",
+        "mod3"
+      ],
+      "BatchIds": [
+        "bat1"
+      ],
+      "totalCredits": 11,
+      "isActive": true,
+      "updatedAt": "2025-03-24T16:17:55.961Z",
+      "createdAt": "2025-03-24T16:17:38.301Z"
+    }
+  ],
+  "departments": [
+    {
+      "departmentId": "D1",
+      "departmentName": "Computer Science",
+      "description": "Complete software development course covering programming, web and databases"
+    },
+    {
+      "departmentId": "D2",
+      "departmentName": "Finance",
+      "description": "Complete software development course covering programming, web and databases"
     }
   ],
   "batches": [
     {
-      "id": "bat1",
-      "courseId": "crs1",
       "name": "SD2025-Spring",
       "startDate": "2025-02-15",
-      "endDate": "2025-06-15",
-      "isActive": true,
-      "createdAt": "2025-01-10T13:00:00Z",
-      "updatedAt": "2025-01-10T13:00:00Z"
+      "description": "",
+      "id": "bat1",
+      "courseId": "crs1"
     },
     {
       "id": "bat2",
       "courseId": "crs2",
       "name": "WD2025-Spring",
+      "startDate": "2025-02-20",
+      "endDate": "2025-05-20"
+    },
+    {
+      "id": "bat3",
+      "courseId": "crs2",
+      "name": "Meow meow",
       "startDate": "2025-02-20",
       "endDate": "2025-05-20",
       "isActive": true,
@@ -150,16 +241,14 @@
   ],
   "classrooms": [
     {
-      "id": "room1",
       "name": "Main Hall",
       "capacity": 100,
+      "description": "",
       "hasProjector": true,
       "hasWhiteboard": true,
-      "hasComputers": false,
-      "computerCount": 0,
-      "isActive": true,
-      "createdAt": "2025-01-02T09:00:00Z",
-      "updatedAt": "2025-01-02T09:00:00Z"
+      "hasComputers": true,
+      "computerCount": "020",
+      "id": "room1"
     },
     {
       "id": "room2",
@@ -211,11 +300,72 @@
       "date": "2025-02-16",
       "startTime": "09:00",
       "endTime": "11:00",
-      "equipmentIds": ["eq1"],
-      "materialIds": ["mat1"],
-      "isCancelled": false,
+      "equipmentIds": [
+        "eq1"
+      ],
+      "materialIds": [
+        "mat1"
+      ],
       "createdAt": "2025-02-01T13:00:00Z",
       "updatedAt": "2025-02-01T13:00:00Z"
+    },
+    {
+      "id": "02aa",
+      "title": "Lecture 1",
+      "courseId": "crs545",
+      "batchId": "bat1",
+      "moduleId": "mod1",
+      "lecturerId": "usr5",
+      "roomId": "room1",
+      "date": "2025-03-26",
+      "startTime": "10:00",
+      "endTime": "12:00",
+      "description": "",
+      "equipmentIds": []
+    },
+    {
+      "id": "7c3e",
+      "title": "meow",
+      "courseId": "crs1",
+      "batchId": "bat3",
+      "moduleId": "mod1",
+      "lecturerId": "usr5",
+      "roomId": "room1",
+      "date": "2025-03-26",
+      "startTime": "01:00",
+      "endTime": "02:00",
+      "description": "",
+      "equipmentIds": [
+        "eq1",
+        "eq2"
+      ]
+    }
+  ],
+  "lecturerSchedule": [
+    {
+      "lecturerId": "usr2",
+      "lectures": [
+        "lec1"
+      ]
+    }
+  ],
+  "LectureResponse": [
+    {
+      "lecturers": [],
+      "classrooms": [
+        {
+          "id": "room2",
+          "name": "Computer Lab A",
+          "capacity": 30
+        }
+      ],
+      "equipment": [
+        {
+          "id": "eq1",
+          "name": "Portable Projector",
+          "quantity": 2
+        }
+      ]
     }
   ],
   "lectureMaterials": [
@@ -244,9 +394,15 @@
       "roomId": "room2",
       "createdBy": "usr3",
       "attendees": {
-        "lecturerIds": ["usr2"],
-        "coordinatorIds": ["usr3"],
-        "batchIds": ["bat1"]
+        "lecturerIds": [
+          "usr2"
+        ],
+        "coordinatorIds": [
+          "usr3"
+        ],
+        "batchIds": [
+          "bat1"
+        ]
       },
       "isCancelled": false,
       "createdAt": "2025-02-20T11:00:00Z",
@@ -256,7 +412,7 @@
   "assignments": [
     {
       "id": "asg1",
-      "moduleId": "mod1",
+      "SubjectId": "mod1",
       "batchId": "bat1",
       "title": "Python Basics Assignment",
       "description": "Create a simple calculator program using Python",
@@ -264,7 +420,8 @@
       "maxScore": 100,
       "createdBy": "usr3",
       "createdAt": "2025-02-17T10:00:00Z",
-      "updatedAt": "2025-02-17T10:00:00Z"
+      "updatedAt": "2025-02-17T10:00:00Z",
+      "briefUrl": "/assignments/design-pattern-analysis-brief.pdf"
     }
   ],
   "assignmentSubmissions": [

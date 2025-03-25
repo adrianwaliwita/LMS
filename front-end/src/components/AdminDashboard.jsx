@@ -79,7 +79,7 @@ const ManageUsers = () => {
           </div>
         </div>
       </div>
-      <div className="mt-6">
+      <div className="">
         <Announcements />
       </div>
     </>

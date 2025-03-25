@@ -43,10 +43,10 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
   };
-
   const logout = () => {
-    setUser(null);
+    setUser(null); // Clear user
     localStorage.removeItem("user");
+    console.log(user);
   };
 
   return (
