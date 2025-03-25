@@ -92,7 +92,7 @@ model Batch {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  // 1:M relationship with Course
+  // M:1 relationship with Course
   course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   // 1:M relationship with StudentBatch
   students StudentBatch[]
