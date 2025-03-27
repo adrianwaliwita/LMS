@@ -21,5 +21,8 @@ export default {
     firebase: {
         disableAuth: process.env.FIREBASE_DISABLE_AUTH === 'true',
         checkRevokedTokens: process.env.FIREBASE_CHECK_REVOKED_TOKENS !== 'false'
+    },
+    crypto: {
+        masterKey: process.env.ENCRYPTION_MASTER_KEY
     }
 };

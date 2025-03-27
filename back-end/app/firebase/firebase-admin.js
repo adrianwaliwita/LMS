@@ -5,6 +5,7 @@ import { getStorage } from 'firebase-admin/storage';
 // Initialize Firebase Admin SDK
 const app = initializeApp({
     credential: applicationDefault(),
+    storageBucket: 'ashbourne-scms.firebasestorage.app'
 });
 
 // Initialize Auth and Storage

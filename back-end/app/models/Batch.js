@@ -3,35 +3,26 @@ import { Course } from './Course.js';
 
 // Batch status based on current date and batch dates
 const BatchStatus = Object.freeze({
-  UPCOMING: 'UPCOMING',      // Current date < enrollStartDate
-  ENROLLING: 'ENROLLING',   // enrollStartDate <= Current date < enrollEndDate
-  PENDING: 'PENDING',       // enrollEndDate <= Current date < batchStartDate
-  ONGOING: 'ONGOING',       // batchStartDate <= Current date < batchEndDate
-  COMPLETED: 'COMPLETED'    // Current date >= batchEndDate
+  UPCOMING: 'UPCOMING',      // Current date < startDate
+  ONGOING: 'ONGOING',       // startDate <= Current date < endDate
+  COMPLETED: 'COMPLETED'    // Current date >= endDate
 });
 
 class Batch {
-  constructor({ id, courseId, name, enrollStartDate, enrollEndDate, batchStartDate, batchEndDate, createdAt, updatedAt, course }) {
-    this.id = id;
-    this.courseId = courseId;
+  constructor({ id, name, startDate, endDate, createdAt, updatedAt, course }) {
+    this.id = id; 
     this.name = name;
-    this.enrollStartDate = enrollStartDate;
-    this.enrollEndDate = enrollEndDate;
-    this.batchStartDate = batchStartDate;
-    this.batchEndDate = batchEndDate;
+    this.startDate = startDate;
+    this.endDate = endDate;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.course = course ? new Course(course) : null;
 
     // Calculate current status
     const now = new Date();
-    if (now < enrollStartDate) {
+    if (now < startDate) {
       this.status = BatchStatus.UPCOMING;
-    } else if (now < enrollEndDate) {
-      this.status = BatchStatus.ENROLLING;
-    } else if (now < batchStartDate) {
-      this.status = BatchStatus.PENDING;
-    } else if (now < batchEndDate) {
+    } else if (now < endDate) {
       this.status = BatchStatus.ONGOING;
     } else {
       this.status = BatchStatus.COMPLETED;
@@ -66,7 +57,7 @@ class Batch {
     return batch ? new Batch(batch) : null;
   }
 
-  static async createBatch({ courseId, name, enrollStartDate, enrollEndDate, batchStartDate, batchEndDate }) {
+  static async createBatch({ courseId, name, startDate, endDate }) {
     // Validate course exists
     const courseExists = await prisma.course.findUnique({
       where: { id: Number(courseId) }
@@ -80,10 +71,8 @@ class Batch {
       data: {
         courseId: Number(courseId),
         name,
-        enrollStartDate: new Date(enrollStartDate),
-        enrollEndDate: new Date(enrollEndDate),
-        batchStartDate: new Date(batchStartDate),
-        batchEndDate: new Date(batchEndDate)
+        startDate: new Date(startDate),
+        endDate: new Date(endDate)
       },
       include: {
         course: true
@@ -93,7 +82,7 @@ class Batch {
     return new Batch(batch);
   }
 
-  static async updateBatch({ id, courseId, name, enrollStartDate, enrollEndDate, batchStartDate, batchEndDate }) {
+  static async updateBatch({ id, courseId, name, startDate, endDate }) {
     // If courseId is provided, validate it exists
     if (courseId !== undefined) {
       const courseExists = await prisma.course.findUnique({
@@ -110,10 +99,8 @@ class Batch {
       data: {
         ...(courseId !== undefined && { courseId: Number(courseId) }),
         ...(name !== undefined && { name }),
-        ...(enrollStartDate !== undefined && { enrollStartDate: new Date(enrollStartDate) }),
-        ...(enrollEndDate !== undefined && { enrollEndDate: new Date(enrollEndDate) }),
-        ...(batchStartDate !== undefined && { batchStartDate: new Date(batchStartDate) }),
-        ...(batchEndDate !== undefined && { batchEndDate: new Date(batchEndDate) })
+        ...(startDate !== undefined && { startDate: new Date(startDate) }),
+        ...(endDate !== undefined && { endDate: new Date(endDate) })
       },
       include: {
         course: true

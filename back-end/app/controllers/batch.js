@@ -13,7 +13,7 @@ export const listBatches = async (req, res) => {
     return res.status(200).json(batches);
   } catch (error) {
     logger.error('[batch.listBatches] Error retrieving batches', error);
-    return res.status(500).json({ error: 'Server error', message: 'Failed to retrieve batches' });
+    return res.status(500).json({ error: 'Server error', message: error.toString() });
   }
 };
 
@@ -31,81 +31,69 @@ export const getBatchById = async (req, res) => {
     return res.status(200).json(batch);
   } catch (error) {
     logger.error(`[batch.getBatchById] Error retrieving batch with id: ${req.params.id}`, error);
-    return res.status(500).json({ error: 'Server error', message: 'Failed to retrieve batch' });
+    return res.status(500).json({ error: 'Server error', message: error.toString() });
   }
 };
 
 export const createBatch = async (req, res) => {
   try {
-    const { courseId, name, enrollStartDate, enrollEndDate, batchStartDate, batchEndDate } = req.body;
+    const { courseId, name, startDate, endDate } = req.body;
 
     // Validate required fields
-    if (!courseId || !name || !enrollStartDate || !enrollEndDate || !batchStartDate || !batchEndDate) {
+    if (!courseId || !name || !startDate || !endDate) {
       logger.info('[batch.createBatch] Missing required fields');
       return res.status(400).json({
         error: 'Missing required fields',
-        message: 'courseId, name, enrollStartDate, enrollEndDate, batchStartDate, and batchEndDate are required'
+        message: 'courseId, name, startDate, and endDate are required'
       });
     }
 
     // Validate dates
-    const now = new Date();
-    const enrollStart = new Date(enrollStartDate);
-    const enrollEnd = new Date(enrollEndDate);
-    const batchStart = new Date(batchStartDate);
-    const batchEnd = new Date(batchEndDate);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
     // Validate date order
-    if (enrollEnd <= enrollStart) {
+    if (end <= start) {
       return res.status(400).json({
         error: 'Invalid dates',
-        message: 'Enrollment end date must be after enrollment start date'
-      });
-    }
-
-    if (batchEnd <= batchStart) {
-      return res.status(400).json({
-        error: 'Invalid dates',
-        message: 'Batch end date must be after batch start date'
-      });
-    }
-
-    if (batchStart < enrollEnd) {
-      return res.status(400).json({
-        error: 'Invalid dates',
-        message: 'Batch start date must be after enrollment end date'
+        message: 'End date must be after start date'
       });
     }
 
     const batch = await Batch.createBatch({
       courseId,
       name,
-      enrollStartDate,
-      enrollEndDate,
-      batchStartDate,
-      batchEndDate
+      startDate,
+      endDate
     });
 
     logger.info(`[batch.createBatch] Created new batch with id: ${batch.id}`);
     return res.status(201).json(batch);
   } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ 
+        error: 'Duplicate batch', 
+        message: `A batch with this name already exists for this course` 
+      });
+    }
+
     if (error.message.includes('Course with ID') && error.message.includes('does not exist')) {
       logger.info(`[batch.createBatch] ${error.message}`);
       return res.status(400).json({ error: 'Invalid course ID', message: error.message });
     }
 
     logger.error('[batch.createBatch] Error creating batch', error);
-    return res.status(500).json({ error: 'Server error', message: 'Failed to create batch' });
+    return res.status(500).json({ error: 'Server error', message: error.toString() });
   }
 };
 
 export const updateBatch = async (req, res) => {
   try {
     const { id } = req.params;
-    const { courseId, name, enrollStartDate, enrollEndDate, batchStartDate, batchEndDate } = req.body;
+    const { courseId, name, startDate, endDate } = req.body;
 
     // Validate at least one field is provided
-    if (!courseId && !name && !enrollStartDate && !enrollEndDate && !batchStartDate && !batchEndDate) {
+    if (!courseId && !name && !startDate && !endDate) {
       logger.info('[batch.updateBatch] No fields provided for update');
       return res.status(400).json({
         error: 'Missing fields',
@@ -113,43 +101,32 @@ export const updateBatch = async (req, res) => {
       });
     }
 
-    // Validate dates if provided
-    if (enrollStartDate && enrollEndDate) {
-      const enrollStart = new Date(enrollStartDate);
-      const enrollEnd = new Date(enrollEndDate);
-      if (enrollEnd <= enrollStart) {
+    // Validate dates if both are provided
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (end <= start) {
         return res.status(400).json({
           error: 'Invalid dates',
-          message: 'Enrollment end date must be after enrollment start date'
+          message: 'End date must be after start date'
         });
       }
     }
 
-    if (batchStartDate && batchEndDate) {
-      const batchStart = new Date(batchStartDate);
-      const batchEnd = new Date(batchEndDate);
-      if (batchEnd <= batchStart) {
-        return res.status(400).json({
-          error: 'Invalid dates',
-          message: 'Batch end date must be after batch start date'
-        });
-      }
-    }
-
-    // Get current batch to validate date changes
-    if ((enrollEndDate || batchStartDate) && !(enrollEndDate && batchStartDate)) {
+    // If only one date is provided, validate against existing dates
+    if ((startDate || endDate) && !(startDate && endDate)) {
       const currentBatch = await Batch.getBatchById(id);
       if (!currentBatch) {
         return res.status(404).json({ error: 'Batch not found', message: 'No batch found with the provided ID' });
       }
 
-      const enrollEnd = enrollEndDate ? new Date(enrollEndDate) : currentBatch.enrollEndDate;
-      const batchStart = batchStartDate ? new Date(batchStartDate) : currentBatch.batchStartDate;
+      const start = startDate ? new Date(startDate) : currentBatch.startDate;
+      const end = endDate ? new Date(endDate) : currentBatch.endDate;
 
-      if (batchStart < enrollEnd) {
+      if (end <= start) {
         return res.status(400).json({
           error: 'Invalid dates',
-          message: 'Batch start date must be after enrollment end date'
+          message: 'End date must be after start date'
         });
       }
     }
@@ -158,15 +135,20 @@ export const updateBatch = async (req, res) => {
       id,
       courseId,
       name,
-      enrollStartDate,
-      enrollEndDate,
-      batchStartDate,
-      batchEndDate
+      startDate,
+      endDate
     });
 
     logger.info(`[batch.updateBatch] Updated batch with id: ${id}`);
     return res.status(200).json(updatedBatch);
   } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(409).json({ 
+        error: 'Duplicate batch', 
+        message: `A batch with this name already exists for this course` 
+      });
+    }
+
     if (error.code === 'P2025') {
       logger.info(`[batch.updateBatch] Batch not found with id: ${req.params.id}`);
       return res.status(404).json({ error: 'Batch not found', message: 'No batch found with the provided ID' });
@@ -178,7 +160,7 @@ export const updateBatch = async (req, res) => {
     }
 
     logger.error(`[batch.updateBatch] Error updating batch with id: ${req.params.id}`, error);
-    return res.status(500).json({ error: 'Server error', message: 'Failed to update batch' });
+    return res.status(500).json({ error: 'Server error', message: error.toString() });
   }
 };
 
@@ -196,6 +178,6 @@ export const deleteBatch = async (req, res) => {
     }
 
     logger.error(`[batch.deleteBatch] Error deleting batch with id: ${req.params.id}`, error);
-    return res.status(500).json({ error: 'Server error', message: 'Failed to delete batch' });
+    return res.status(500).json({ error: 'Server error', message: error.toString() });
   }
-}; 
+};
