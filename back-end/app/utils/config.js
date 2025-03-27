@@ -10,7 +10,7 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../..', '.env') });
 
 export default {
-    port: process.env.PORT || 5000,
+    port: process.env.PORT || 8080,
     database: {
         host: (process.env.DB_HOST || 'localhost').trim(),
         port: parseInt(process.env.DB_PORT || '3306'),
