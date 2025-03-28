@@ -1,0 +1,230 @@
+/batches:
+  get:
+    tags:
+      - Batches
+    summary: List all batches
+    description: Retrieve a list of all batches with optional filters
+    parameters:
+      - name: courseId
+        in: query
+        schema:
+          type: integer
+        description: Filter batches by course ID
+      - name: name
+        in: query
+        schema:
+          type: string
+        description: Filter batches by name (partial match)
+    responses:
+      200:
+        description: A list of batches
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Batch'
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  post:
+    tags:
+      - Batches
+    summary: Create a new batch
+    description: Create a new batch for a course
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - courseId
+              - name
+              - startDate
+              - endDate
+            properties:
+              courseId:
+                type: integer
+                description: ID of the course this batch belongs to
+              name:
+                type: string
+                description: Name of the batch
+              startDate:
+                type: string
+                format: date-time
+                description: Start date of the batch
+              endDate:
+                type: string
+                format: date-time
+                description: End date of the batch
+    responses:
+      201:
+        description: Batch created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Batch'
+      400:
+        description: Invalid input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+            examples:
+              missingFields:
+                value:
+                  error: "Missing required fields"
+                  message: "courseId, name, startDate, and endDate are required"
+              invalidDates:
+                value:
+                  error: "Invalid dates"
+                  message: "End date must be after start date"
+              invalidCourseId:
+                value:
+                  error: "Invalid course ID"
+                  message: "Course with ID {id} does not exist"
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/batches/{id}:
+  get:
+    tags:
+      - Batches
+    summary: Get a batch by ID
+    description: Retrieve a single batch by its ID
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Batch ID
+    responses:
+      200:
+        description: Batch found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Batch'
+      404:
+        description: Batch not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  patch:
+    tags:
+      - Batches
+    summary: Update a batch
+    description: Update a batch's details
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Batch ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            properties:
+              courseId:
+                type: integer
+                description: ID of the course this batch belongs to
+              name:
+                type: string
+                description: Name of the batch
+              startDate:
+                type: string
+                format: date-time
+                description: Start date of the batch
+              endDate:
+                type: string
+                format: date-time
+                description: End date of the batch
+    responses:
+      200:
+        description: Batch updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Batch'
+      400:
+        description: Invalid input
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+            examples:
+              noFields:
+                value:
+                  error: "Missing fields"
+                  message: "At least one field must be provided for update"
+              invalidDates:
+                value:
+                  error: "Invalid dates"
+                  message: "End date must be after start date"
+              invalidCourseId:
+                value:
+                  error: "Invalid course ID"
+                  message: "Course with ID {id} does not exist"
+      404:
+        description: Batch not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  delete:
+    tags:
+      - Batches
+    summary: Delete a batch
+    description: Delete a batch by its ID
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Batch ID
+    responses:
+      204:
+        description: Batch deleted successfully
+      404:
+        description: Batch not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error' 

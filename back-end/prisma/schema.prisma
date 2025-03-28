@@ -24,10 +24,10 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // 1:1 relationship with Batch (for students)
-  student StudentBatch?
-  // M:M relationship with Module (for lecturers)
-  modules LecturerModule[]
+  student               StudentBatch?
+  modules               LecturerModule[]
+  assignments           Assignment[]
+  assignmentSubmissions AssignmentSubmission[]
 
   @@map("user")
 }
@@ -39,10 +39,9 @@ model Module {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // M:M relationship with Course
-  courses   CourseModule[]
-  // M:M relationship with User (Lecturer)
-  lecturers LecturerModule[]
+  courses     CourseModule[]
+  lecturers   LecturerModule[]
+  assignments Assignment[]
 
   @@map("module")
 }
@@ -57,9 +56,7 @@ model Course {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // 1:M relationship with Batch
   batches Batch[]
-  // M:M relationship with Module
   modules CourseModule[]
 
   @@map("course")
@@ -72,9 +69,7 @@ model CourseModule {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // M:1 relationship with Course
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  // M:1 relationship with Module
   module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@id([courseId, moduleId])
@@ -85,18 +80,16 @@ model Batch {
   id              Int      @id @default(autoincrement())
   courseId        Int      @map("course_id")
   name            String
-  enrollStartDate DateTime @map("enroll_start_date")
-  enrollEndDate   DateTime @map("enroll_end_date")
-  batchStartDate  DateTime @map("batch_start_date")
-  batchEndDate    DateTime @map("batch_end_date")
+  startDate       DateTime @map("start_date")
+  endDate         DateTime @map("end_date")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  // 1:M relationship with Course
-  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  // 1:M relationship with StudentBatch
-  students StudentBatch[]
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students    StudentBatch[]
+  assignments Assignment[]
 
+  @@unique([courseId, name])
   @@map("batch")
 }
 
@@ -108,9 +101,7 @@ model StudentBatch {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // 1:1 relationship with User
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // M:1 relationship with Batch
   batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@id([userId, batchId])
@@ -124,11 +115,45 @@ model LecturerModule {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // M:1 relationship with User
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  // M:1 relationship with Module
   module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
   @@id([userId, moduleId])
   @@map("lecturer_module")
+}
+
+model Assignment {
+  id            Int      @id @default(autoincrement())
+  batchId       Int      @map("batch_id")
+  moduleId      Int      @map("module_id")
+  title         String
+  description   String
+  briefFileName String?  @map("brief_file_name")
+  dueDate       DateTime @map("due_date")
+  createdBy     Int      @map("created_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  batch       Batch                  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  module      Module                 @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  creator     User                   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@unique([batchId, moduleId, title])
+  @@map("assignment")
+}
+
+model AssignmentSubmission {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int      @map("assignment_id")
+  studentId    Int      @map("student_id")
+  fileName     String   @map("file_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@map("assignment_submission")
 }

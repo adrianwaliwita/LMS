@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import v1Router from './api/v1/routes/base.js';
 import logger from './utils/logger.js';
 import config from './utils/config.js';
@@ -10,6 +11,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(morgan('combined'));
 
 // Basic route
 app.get('/', (req, res) => {

@@ -132,5 +132,44 @@ components:
           format: date-time
           description: Last update timestamp
 
+    Batch:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Batch ID
+        courseId:
+          type: integer
+          description: ID of the course this batch belongs to
+        name:
+          type: string
+          description: Name of the batch
+        startDate:
+          type: string
+          format: date-time
+          description: Start date of the batch
+        endDate:
+          type: string
+          format: date-time
+          description: End date of the batch
+        status:
+          type: string
+          enum: [UPCOMING, ONGOING, COMPLETED]
+          description: >
+            Current status of the batch:
+            * UPCOMING - Current date < startDate
+            * ONGOING - startDate <= Current date < endDate
+            * COMPLETED - Current date >= endDate
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        course:
+          $ref: '#/components/schemas/Course'
+
 security:
   - BearerAuth: [] 

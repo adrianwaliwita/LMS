@@ -5,6 +5,8 @@ import { auth } from '../../../controllers/auth.js';
 import usersRouter from './users.js';
 import modulesRouter from './modules.js';
 import coursesRouter from './courses.js';
+import batchesRouter from './batches.js';
+import assignmentsRouter from './assignments.js';
 
 const v1Router = Router();
 
@@ -22,5 +24,7 @@ v1Router.use(verifyFirebaseToken);
 v1Router.use('/users', usersRouter);
 v1Router.use('/modules', modulesRouter);
 v1Router.use('/courses', coursesRouter);
+v1Router.use('/batches', batchesRouter);
+v1Router.use('/assignments', assignmentsRouter);
 
 export default v1Router;
