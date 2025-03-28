@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Logo from "/SMSC.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, user, token } = useAuth();
+  const { login, user, token, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,8 +16,10 @@ const Login = () => {
 
     try {
       const success = await login(email, password);
+
       if (success) {
-        navigate("/dashboard"); // Redirect after login
+        // Redirect to dashboard if login is successful
+        navigate("/dashboard");
       } else {
         setError("Invalid email or password.");
       }
@@ -32,7 +34,7 @@ const Login = () => {
         <div className="hidden lg:block lg:w-1/2 bg-cover relative bg-gradient-to-l from-[#0008BF] to-[#164beb]">
           <img
             src={Logo}
-            alt="Description of image"
+            alt="Logo"
             className="absolute inset-0 m-auto max-w-full max-h-full object-contain"
           />
         </div>
@@ -67,7 +69,7 @@ const Login = () => {
                   Password
                 </label>
                 <a href="#" className="text-xs text-gray-500">
-                  Forget Password?
+                  Forgot Password?
                 </a>
               </div>
               <input
@@ -80,10 +82,11 @@ const Login = () => {
             </div>
             <div className="mt-8">
               <button
-                className=" cursor-pointer pointer-events-auto bg-gradient-to-l from-[#0008BF] to-[#164beb] text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600"
+                className="cursor-pointer bg-gradient-to-l from-[#0008BF] to-[#164beb] text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600"
                 type="submit"
+                disabled={loading} // Disable while loading
               >
-                Login
+                {loading ? "Logging in..." : "Login"}
               </button>
             </div>
           </form>

@@ -2,16 +2,31 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 
-const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
+// Role mapping between frontend and backend
+const ROLE_MAPPING = {
+  admin: 1,
+  coordinator: 2,
+  lecturer: 3,
+  student: 4,
+};
+
+const REVERSE_ROLE_MAPPING = {
+  1: "admin",
+  2: "coordinator",
+  3: "lecturer",
+  4: "student",
+};
 
 const UserManagement = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   // Data States
   const [users, setUsers] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [batches, setBatches] = useState([]);
+  const [error, setError] = useState(null);
+
   // UI & Form States
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -19,41 +34,34 @@ const UserManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [userFormData, setUserFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    role: "student",
-    departmentId: "",
-    batchId: "",
+    role: "admin",
+    password: "",
   });
 
-  // Fetch users and departments on mount
+  // Fetch users on mount
   useEffect(() => {
-    Promise.all([
-      axios.get(`${baseUrl}/users`),
-      axios.get(`${baseUrl}/departments`),
-      axios.get(`${baseUrl}/batches`),
-    ])
-      .then(([usersRes, departmentsRes, batchesRes]) => {
-        console.log(batchesRes.data);
-
+    const fetchData = async () => {
+      try {
+        const usersRes = await axios.get(`${baseUrl}/users`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         setUsers(usersRes.data);
-        setDepartments(departmentsRes.data);
-        setBatches(batchesRes.data);
         setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching data:", error);
+        setError(null);
+      } catch (error) {
         setLoading(false);
-      });
-  }, []);
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch users. Please try again."
+        );
+      }
+    };
 
-  // Helper function to get department name
-  const getDepartmentName = (departmentId) => {
-    if (!departmentId) return "No Department";
-    const deptId = Array.isArray(departmentId) ? departmentId[0] : departmentId;
-    const department = departments.find((dept) => dept.departmentId === deptId);
-    return department ? department.departmentName : "Unknown Department";
-  };
+    fetchData();
+  }, [token]);
 
   // Form event handlers
   const handleInputChange = (e) => {
@@ -64,29 +72,33 @@ const UserManagement = () => {
     }));
   };
 
-  const handleDepartmentChange = (e) => {
-    const { value } = e.target;
-    setUserFormData((prev) => ({
-      ...prev,
-      departmentId: value || null,
-    }));
-  };
-
   // Add a new user
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
       const newUser = {
-        ...userFormData,
-        batchId: userFormData.role === "student" ? userFormData.batchId : null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        firstName: userFormData.firstName,
+        lastName: userFormData.lastName,
+        email: userFormData.email,
+        role: ROLE_MAPPING[userFormData.role],
+        password: userFormData.password,
       };
-      const res = await axios.post(`${baseUrl}/users`, newUser);
+
+      const res = await axios.post(`${baseUrl}/users`, newUser, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setUsers([...users, res.data]);
       resetForm();
+      setError(null);
     } catch (error) {
-      console.error("Error adding user:", error);
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to add user. Please check your inputs and try again."
+      );
     }
   };
 
@@ -95,66 +107,95 @@ const UserManagement = () => {
     e.preventDefault();
     try {
       const updatedUser = {
-        ...userFormData,
-        updatedAt: new Date().toISOString(),
+        firstName: userFormData.firstName,
+        lastName: userFormData.lastName,
+        email: userFormData.email,
+        role: ROLE_MAPPING[userFormData.role],
       };
-      await axios.put(`${baseUrl}/users/${selectedUser.id}`, updatedUser);
+
+      // Only include password if it's not empty
+      if (userFormData.password) {
+        updatedUser.password = userFormData.password;
+      }
+
+      await axios.put(`${baseUrl}/users/${selectedUser._id}`, updatedUser, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setUsers(
         users.map((u) =>
-          u.id === selectedUser.id ? { ...u, ...updatedUser } : u
+          u._id === selectedUser._id ? { ...u, ...updatedUser } : u
         )
       );
       resetForm();
       setSelectedUser(null);
+      setError(null);
     } catch (error) {
-      console.error("Error updating user:", error);
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to update user. Please try again."
+      );
     }
   };
 
   // Delete a user
+  // Delete a user
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await axios.delete(`${baseUrl}/users/${id}`);
+      await axios.delete(`${baseUrl}/users/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setUsers(users.filter((u) => u.id !== id));
       if (selectedUser && selectedUser.id === id) {
         setSelectedUser(null);
       }
+      setError(null);
     } catch (error) {
-      console.error("Error deleting user:", error);
+      setError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to delete user. Please try again."
+      );
     }
   };
 
   // Reset the user form
   const resetForm = () => {
     setUserFormData({
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
-      role: "student",
-      departmentId: "",
+      role: "admin",
+      password: "",
     });
     setIsEditMode(false);
     setShowForm(false);
+    setError(null);
   };
-  const getBatchName = (batchId) => {
-    if (!batchId) return "No Batch";
-    const batch = batches.find((b) => b.batchId === batchId);
-    return batch ? batch.name : "Unknown Batch";
+
+  // Get full name from first and last name
+  const getFullName = (user) => {
+    return `${user.firstName} ${user.lastName}`;
   };
+
   // Filter users based on search and role
   const filteredUsers = users.filter((u) => {
+    const fullName = getFullName(u).toLowerCase();
     const matchesSearch =
-      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getDepartmentName(u.departmentId)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === "all" || u.role === filterRole;
+      fullName.includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      filterRole === "all" || REVERSE_ROLE_MAPPING[u.role] === filterRole;
     return matchesSearch && matchesRole;
   });
 
   // Redirect non-admin users
-  if (user?.role !== "admin") {
+  if (user?.role !== 1) {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
         <p className="text-red-700">
@@ -177,6 +218,13 @@ const UserManagement = () => {
 
       {/* Main Content */}
       <div className="container mx-auto p-4 flex-grow">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
         {/* Only show filters and grid when no user is selected and no form is active */}
         {!selectedUser && !showForm && (
           <>
@@ -204,7 +252,6 @@ const UserManagement = () => {
                 <button
                   onClick={() => {
                     resetForm();
-
                     setShowForm(true);
                     setIsEditMode(false);
                   }}
@@ -224,21 +271,22 @@ const UserManagement = () => {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredUsers.map((u) => (
                   <div
-                    key={u.id}
+                    key={u._id}
                     className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
                   >
                     <h3
                       className="text-lg font-semibold text-blue-700 cursor-pointer"
                       onClick={() => setSelectedUser(u)}
                     >
-                      {u.name}
+                      {getFullName(u)}
                     </h3>
                     <p className="text-gray-700 mt-2">
                       <span className="font-semibold">Email:</span> {u.email}
                     </p>
                     <p className="text-gray-700">
                       <span className="font-semibold">Role:</span>{" "}
-                      {u.role.charAt(0).toUpperCase() + u.role.slice(1)}
+                      {REVERSE_ROLE_MAPPING[u.role]?.charAt(0).toUpperCase() +
+                        REVERSE_ROLE_MAPPING[u.role]?.slice(1) || "Unknown"}
                     </p>
 
                     <div className="mt-3">
@@ -268,16 +316,30 @@ const UserManagement = () => {
             >
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+                  First Name
                 </label>
                 <input
                   type="text"
-                  name="name"
-                  value={userFormData.name}
+                  name="firstName"
+                  value={userFormData.firstName}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  placeholder="Enter full name"
+                  placeholder="Enter first name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={userFormData.lastName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                  placeholder="Enter last name"
                 />
               </div>
               <div>
@@ -296,6 +358,30 @@ const UserManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={userFormData.password}
+                  onChange={handleInputChange}
+                  required={!isEditMode}
+                  minLength={isEditMode ? 0 : 6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                  placeholder={
+                    isEditMode
+                      ? "Leave blank to keep current"
+                      : "Enter password"
+                  }
+                />
+                {!isEditMode && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Password must be at least 6 characters
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Role
                 </label>
                 <select
@@ -304,51 +390,10 @@ const UserManagement = () => {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                 >
-                  <option value="student">Student</option>
-                  <option value="lecturer">Lecturer</option>
-                  <option value="coordinator">Coordinator</option>
                   <option value="admin">Admin</option>
-                </select>
-              </div>
-              {userFormData.role === "student" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Batch
-                  </label>
-                  <select
-                    name="batchId"
-                    value={userFormData.batchId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  >
-                    <option value="">Select Batch</option>
-                    {batches.map((batch) => (
-                      <option key={batch.batchId} value={batch.batchId}>
-                        {batch.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
-                <select
-                  value={
-                    Array.isArray(userFormData.departmentId)
-                      ? userFormData.departmentId[0]
-                      : userFormData.departmentId || ""
-                  }
-                  onChange={handleDepartmentChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept.departmentId} value={dept.departmentId}>
-                      {dept.departmentName}
-                    </option>
-                  ))}
+                  <option value="coordinator">Coordinator</option>
+                  <option value="lecturer">Lecturer</option>
+                  <option value="student">Student</option>
                 </select>
               </div>
 
@@ -376,7 +421,7 @@ const UserManagement = () => {
           <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-2xl font-bold text-blue-700">
-                {selectedUser.name}
+                {getFullName(selectedUser)}
               </h2>
               <button
                 onClick={() => setSelectedUser(null)}
@@ -392,19 +437,12 @@ const UserManagement = () => {
               </p>
               <p>
                 <span className="font-semibold">Role:</span>{" "}
-                {selectedUser.role.charAt(0).toUpperCase() +
-                  selectedUser.role.slice(1)}
+                {REVERSE_ROLE_MAPPING[selectedUser.role]
+                  ?.charAt(0)
+                  .toUpperCase() +
+                  REVERSE_ROLE_MAPPING[selectedUser.role]?.slice(1) ||
+                  "Unknown"}
               </p>
-              <p>
-                <span className="font-semibold">Department:</span>{" "}
-                {getDepartmentName(selectedUser.departmentId)}
-              </p>
-              {selectedUser.role === "student" && (
-                <p>
-                  <span className="font-semibold">Batch:</span>{" "}
-                  {getBatchName(selectedUser.batchId)}
-                </p>
-              )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
@@ -417,10 +455,11 @@ const UserManagement = () => {
               <button
                 onClick={() => {
                   setUserFormData({
-                    name: selectedUser.name,
+                    firstName: selectedUser.firstName,
+                    lastName: selectedUser.lastName,
                     email: selectedUser.email,
-                    role: selectedUser.role,
-                    departmentId: selectedUser.departmentId || "",
+                    role: REVERSE_ROLE_MAPPING[selectedUser.role] || "admin",
+                    password: "",
                   });
                   setIsEditMode(true);
                   setShowForm(true);

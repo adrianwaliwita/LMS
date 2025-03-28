@@ -220,16 +220,6 @@ const CourseManagement = () => {
     return matchesSearch && matchesActive;
   });
 
-  if (user?.role !== "admin") {
-    return (
-      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-        <p className="text-red-700">
-          You do not have permission to access this page.
-        </p>
-      </div>
-    );
-  }
-
   if (loading) return <p className="text-center p-4">Loading courses...</p>;
 
   return (

@@ -5,6 +5,13 @@ import { FaArrowLeft } from "react-icons/fa";
 import Logo from "/SMSC.png";
 import { useNavigate } from "react-router-dom"; // For navigation
 
+const UserRoles = {
+  0: "Terminated",
+  1: "Admin",
+  2: "Coordinator",
+  3: "Lecturer",
+  4: "Student",
+};
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate(); // Get navigate function from useNavigate hook
@@ -12,7 +19,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   if (!user) return null;
 
   const menu = {
-    admin: [
+    1: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Users", path: "/manage-users" }, //done
       //leturer subjects has to be assigned to the lecturers
@@ -26,13 +33,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       { name: "Profile Settings", path: `/profile` },
     ],
 
-    lecturer: [
+    3: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to subjects from students all documents are uploaded from the coordinator
       { name: "Profile Settings", path: `/profile` },
     ],
 
-    coordinator: [
+    2: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Subjects", path: "/manage-subjects" },
       { name: "Manage Students", path: "/manage-students" }, //done
@@ -47,7 +54,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       { name: "Profile Settings", path: `/profile` },
     ],
 
-    student: [
+    4: [
       { name: "Home", path: "/dashboard" },
       { name: "My Subjects", path: "/subjects" }, //show schedules of the student
       { name: "Submit Assignments", path: "/assignment" },
@@ -85,7 +92,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         )}
 
         <h2 className="text-2xl capitalize font-bold mb-4 p-[0.5vw]">
-          {user.role} Dashboard
+          {UserRoles[user.role]} Dashboard
         </h2>
         <ul className="mb-auto">
           {menu[user.role]?.map((item) => (

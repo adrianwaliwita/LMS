@@ -55,7 +55,7 @@ const ManageUsers = () => {
             <div className="flex justify-between">
               <span>Admins:</span>
               <span className="font-medium">
-                {users.filter((u) => u.role === "admin").length}
+                {users.filter((u) => u.role === 1).length}
               </span>
             </div>
             <div className="flex justify-between">

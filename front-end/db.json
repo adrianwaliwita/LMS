@@ -1,187 +1,98 @@
 {
   "users": [
     {
-      "name": "Adrian ",
-      "email": "admin@example.com",
-      "role": "admin",
-      "departmentId": "D1",
-      "id": "usr1"
+      "id": 1,
+      "firebaseUid": "RntE6DtAsDbHHxsKfgvF9L6nNOu2",
+      "email": "ashengunawardena565@gmail.com",
+      "firstName": "Ashen",
+      "lastName": "Gunawardena",
+      "role": 1,
+      "createdAt": "2025-03-27T20:08:39.579Z",
+      "updatedAt": "2025-03-27T20:08:39.579Z"
     },
     {
-      "name": "John Smith",
-      "email": "student@example.com",
-      "role": "student",
-      "departmentId": "D2",
-      "batchId": "bat1",
-      "updatedAt": "2025-03-27T14:12:44.339Z",
-      "id": "usr2"
-    },
-    {
-      "id": "usr3",
-      "name": "Sarah Johnson",
-      "email": "coord@example.com",
-      "password": "coord123",
-      "departmentId": ["D1"],
-      "role": "coordinator",
-      "isActive": true,
-      "passwordResetRequired": true
-    },
-    {
-      "id": "usr4",
-      "name": "Sarah Johnson",
-      "email": "lecturer@example.com",
-      "password": "123",
-      "department": "Computer Science",
-      "role": "coordinator",
-      "isActive": true,
-      "passwordResetRequired": true,
-      "createdAt": "2025-01-20T14:15:00Z",
-      "updatedAt": "2025-01-20T14:15:00Z",
-      "lastLogin": "2025-03-18T11:22:45Z"
-    },
-    {
-      "id": "afa4",
-      "name": "Alex Johnson",
-      "email": "adadada@gmail.com",
-      "role": "student",
-      "department": "Computer Science",
-      "batch": "Batch A"
-    },
-    {
-      "id": "d8ff",
-      "name": "Adrian Waliwita",
+      "id": 2,
+      "firebaseUid": "RntE6DtAsDbHHxsKfgvF9L6nNOu2",
       "email": "adwaliwita@gmail.com",
-      "role": "student",
-      "department": "Computer Science",
-      "batchId": null
+      "firstName": "Adrian",
+      "lastName": "Waliwita",
+      "role": 1,
+      "createdAt": "2025-03-27T20:08:39.579Z",
+      "updatedAt": "2025-03-27T20:08:39.579Z"
     },
     {
-      "id": "usr5",
-      "name": "Dr. Emily Carter",
-      "email": "emily.carter@example.com",
-      "password": "123",
-      "role": "lecturer",
-      "departmentId": "D1",
-      "SubjectIDs": ["mod1", "mod3"],
-      "courseIds": ["crs1"]
-    },
-    {
-      "id": "be81",
-      "name": "Adrian",
-      "email": "adwaliwita@gmail.com",
-      "role": "student",
-      "departmentId": "D1",
-      "batchId": "bat3"
-    },
-    {
-      "id": "5d0c",
-      "name": "asmitha bandara",
-      "email": "lecturer@example.com",
-      "role": "lecturer",
-      "departmentId": "D1",
-      "createdAt": "2025-03-25T10:10:51.432Z",
-      "updatedAt": "2025-03-25T10:10:51.432Z"
-    },
-    {
-      "id": "7d39",
-      "name": "Adrian",
-      "email": "dpnetflix700@gmail.com",
-      "role": "coordinator",
-      "departmentId": "D1",
-      "createdAt": "2025-03-25T11:20:19.075Z",
-      "updatedAt": "2025-03-25T11:20:19.075Z"
-    },
-    {
-      "id": "d3f1",
-      "name": "meo",
-      "email": "adwaliwita@gmail.com",
-      "role": "student",
-      "departmentId": "",
-      "batchId": "bat2",
-      "createdAt": "2025-03-27T14:10:42.213Z",
-      "updatedAt": "2025-03-27T14:10:42.213Z"
-    },
-    {
-      "id": "84c9",
-      "name": "xzx",
-      "email": "student@example.com",
-      "role": "student",
-      "departmentId": "D1",
-      "batchId": "bat1",
-      "createdAt": "2025-03-27T14:14:50.341Z",
-      "updatedAt": "2025-03-27T14:14:50.342Z"
+      "id": 3,
+      "firebaseUid": "RntE6DtAsDbHHxsKfgvF9L6nNOu2",
+      "email": "shane@gmail.com",
+      "firstName": "Shane",
+      "lastName": "Waliwita",
+      "role": 4,
+      "createdAt": "2025-03-27T20:08:39.579Z",
+      "updatedAt": "2025-03-27T20:08:39.579Z"
     }
   ],
-  "subjects": [
+
+  "batches": [
     {
-      "name": "Introduction to Programming",
-      "description": "Basic concepts of programming using Python",
-      "credits": 4,
-      "courseIds": ["crs1", "crs545", "ff10", "e63a"],
-      "updatedAt": "2025-03-27T14:45:43.077Z",
-      "id": "mod1"
-    },
-    {
-      "id": "mod2",
-      "name": "Web Design ",
-      "description": "HTML, CSS and basic JavaScript",
-      "credits": 3,
-      "time": "Monday 9:00 AM - 11:00 AM",
-      "location": "Computer Lab A",
-      "isActive": true,
-      "createdAt": "2025-01-01T10:15:00Z",
-      "updatedAt": "2025-01-01T10:15:00Z"
-    },
-    {
-      "id": "mod3",
-      "name": "Database Design",
-      "description": "Relational database design and SQL",
-      "credits": 4,
-      "time": "Monday 9:00 AM - 11:00 AM",
-      "location": "Computer Lab A",
-      "isActive": true,
-      "createdAt": "2025-01-01T10:30:00Z",
-      "updatedAt": "2025-01-01T10:30:00Z"
+      "id": 1,
+      "courseId": 101,
+      "name": "Batch A",
+      "startDate": "2025-04-01T00:00:00Z",
+      "endDate": "2025-07-01T00:00:00Z",
+      "status": "active",
+      "createdAt": "2025-03-28T12:00:00Z",
+      "updatedAt": "2025-03-28T12:00:00Z",
+      "course": {
+        "id": 101,
+        "title": "Web Development Bootcamp",
+        "description": "A comprehensive course on modern web development.",
+        "category": 1,
+        "level": 2,
+        "price": 199.99,
+        "modules": [
+          {
+            "id": 1,
+            "title": "HTML & CSS Basics",
+            "description": "Introduction to HTML and CSS fundamentals."
+          },
+          {
+            "id": 2,
+            "title": "JavaScript Essentials",
+            "description": "Learn core JavaScript concepts and DOM manipulation."
+          }
+        ],
+        "createdAt": "2025-03-20T10:00:00Z",
+        "updatedAt": "2025-03-27T15:30:00Z"
+      }
     }
   ],
+
   "courses": [
     {
-      "name": "Cat Development",
-      "description": "Complete software development course covering programming, web and databases",
-      "SubjectIds": ["mod1", "mod2", "mod3"],
-      "BatchIds": ["Meow meow (Start: Feb 20, 2025)"],
-      "totalCredits": 11,
-      "isActive": true,
-      "updatedAt": "2025-03-27T15:35:39.122Z",
-      "id": "crs1"
-    },
-    {
-      "id": "crs545",
-      "name": "Meow Development",
-      "description": "Complete software development course covering programming, web and databases",
-      "isActive": true,
-      "createdAt": "2025-01-05T11:00:00Z",
-      "updatedAt": "2025-03-24T14:48:14.547Z"
-    },
-    {
-      "id": "ff10",
-      "name": "Business Analytics",
-      "description": "Meow meow",
-      "BatchIds": ["bat2", "bat3"],
-      "isActive": true,
-      "createdAt": "2025-03-24T15:09:25.484Z",
-      "updatedAt": "2025-03-24T15:09:25.484Z"
-    },
-    {
-      "id": "e63a",
-      "name": "meow 101",
-      "description": "",
-      "SubjectIds": ["mod1", "mod2", "mod3"],
-      "BatchIds": ["bat1"],
-      "totalCredits": 11,
-      "isActive": true,
-      "updatedAt": "2025-03-24T16:17:55.961Z",
-      "createdAt": "2025-03-24T16:17:38.301Z"
+      "id": 101,
+      "title": "Web Development Bootcamp",
+      "description": "A comprehensive course on modern web development.",
+      "category": 1,
+      "level": 2,
+      "price": 199.99,
+      "modules": [
+        {
+          "id": 1,
+          "title": "HTML & CSS Basics",
+          "description": "Introduction to HTML and CSS fundamentals.",
+          "createdAt": "2025-03-20T10:00:00Z",
+          "updatedAt": "2025-03-25T14:00:00Z"
+        },
+        {
+          "id": 2,
+          "title": "JavaScript Essentials",
+          "description": "Learn core JavaScript concepts and DOM manipulation.",
+          "createdAt": "2025-03-21T11:00:00Z",
+          "updatedAt": "2025-03-26T16:00:00Z"
+        }
+      ],
+      "createdAt": "2025-03-20T10:00:00Z",
+      "updatedAt": "2025-03-27T15:30:00Z"
     }
   ],
   "departments": [
@@ -196,28 +107,7 @@
       "description": "Complete software development course covering programming, web and databases"
     }
   ],
-  "batches": [
-    {
-      "batchId": "bat1",
-      "name": "SD2025-Spring",
-      "startDate": "2025-02-15",
-      "description": "",
-      "courseId": "crs1"
-    },
-    {
-      "batchId": "bat2",
-      "name": "WD2025-Spring",
-      "startDate": "2025-02-20",
-      "courseId": "crs2"
-    },
-    {
-      "batchId": "bat3",
-      "name": "Meow meow",
-      "startDate": "2025-02-20",
-      "endDate": "2025-05-20",
-      "courseId": "crs2"
-    }
-  ],
+
   "classrooms": [
     {
       "name": "Main Hall",

@@ -1,125 +1,137 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  getIdToken,
-  getIdTokenResult,
-} from "firebase/auth";
 import axios from "axios";
-import { auth } from "../config/firebase-client";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import { useNavigate } from "react-router-dom";
+
+// Firebase configuration (Replace with your Firebase project config)
+const firebaseConfig = {
+  apiKey: "AIzaSyBGYJCJROiRdOaTDEogVeLNwWDqV7tZCLE",
+  authDomain: "ashbourne-scms.firebaseapp.com",
+  projectId: "ashbourne-scms",
+  storageBucket: "ashbourne-scms.firebasestorage.app",
+  messagingSenderId: "292636467871",
+  appId: "1:292636467871:web:9332748da214ef4baab8aa",
+  measurementId: "G-CJD9TNVT9L",
+};
+
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+
+// Create Auth Context
+const backendUrl =
+  "https://ashbourne-scms-backend-292636467871.us-central1.run.app/v1/users";
 
 const AuthContext = createContext();
-const baseUrl = import.meta.env.VITE_BASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [token, setToken] = useState(null);
 
+  // Load user data from localStorage on first render
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-          // Get ID token
-          const idToken = await getIdToken(firebaseUser);
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
 
-          // Get token result for additional claims
-          const tokenResult = await getIdTokenResult(firebaseUser);
-
-          // // Log Firebase user object
-          // console.log("Firebase User:", {
-          //   uid: firebaseUser.uid,
-          //   email: firebaseUser.email,
-          //   emailVerified: firebaseUser.emailVerified,
-          // });
-
-          // // Log ID Token
-          // console.log("ID Token:", idToken);
-
-          // // Log Token Claims
-          // console.log("Token Claims:", tokenResult.claims);
-
-          // Fetch additional user details from your JSON server if needed
-          const response = await axios.get(
-            `${baseUrl}/users?email=${firebaseUser.email}`
-          );
-          const userDetails = response.data[0] || {};
-
-          // Log JSON Server User Details
-          console.log("JSON Server User Details:", userDetails);
-
-          const combinedUser = {
-            ...userDetails,
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            emailVerified: firebaseUser.emailVerified,
-          };
-
-          // Log Combined User Object
-          console.log("Combined User Object:", combinedUser);
-
-          setUser(combinedUser);
-          setToken(idToken);
-
-          // Store user and token in localStorage
-          localStorage.setItem("user", JSON.stringify(combinedUser));
-          localStorage.setItem("token", idToken);
-        } catch (error) {
-          console.error("Authentication setup error:", error);
-          setUser(null);
-          setToken(null);
-        }
-      } else {
-        setUser(null);
-        setToken(null);
+    if (storedUser && storedToken) {
+      try {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } catch (parseError) {
+        console.error("Error parsing stored data:", parseError);
         localStorage.removeItem("user");
         localStorage.removeItem("token");
       }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
+  // Login with Firebase and fetch user details from backend
   const login = async (email, password) => {
     try {
+      setLoading(true);
+      setError(null);
+
+      // Authenticate with Firebase
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
-      // onAuthStateChanged will handle setting the user and token
+      const firebaseUser = userCredential.user;
+
+      // Get Firebase token
+      const firebaseToken = await firebaseUser.getIdToken();
+      setToken(firebaseToken);
+
+      // Fetch user details from backend using email
+      const response = await axios.get(`${backendUrl}?email=${email}`, {
+        headers: { Authorization: `Bearer ${firebaseToken}` },
+        timeout: 10000,
+      });
+
+      const userDetails = response.data;
+      if (!userDetails || userDetails.length === 0) {
+        throw new Error("User not found in backend");
+      }
+
+      // Combine Firebase and backend user data
+      const fullUser = {
+        ...firebaseUser,
+        ...userDetails[0],
+      };
+
+      // Store user and token data
+      setUser(fullUser);
+      localStorage.setItem("user", JSON.stringify(fullUser));
+      localStorage.setItem("token", firebaseToken);
+
       return true;
     } catch (error) {
-      console.error("Firebase Login Error:", error);
+      console.error("Login Error:", error);
+      setError(error.response?.data?.message || "Authentication failed");
       return false;
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Logout function
+
   const logout = async () => {
+    const navigate = useNavigate();
+
     try {
       await signOut(auth);
-      // onAuthStateChanged will handle clearing the user and token
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+
+      // Redirect to login page
+      navigate("/", { replace: true });
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("Logout Error:", error);
     }
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        loading,
-        token,
-      }}
+      value={{ user, login, logout, loading, error, token }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Custom hook to use the auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

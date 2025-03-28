@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-
+import { useAuth } from "../../context/AuthContext";
 const BatchManagement = () => {
   const [batches, setBatches] = useState([]);
   const [students, setStudents] = useState([]);
@@ -19,25 +19,39 @@ const BatchManagement = () => {
   });
 
   const baseUrl = import.meta.env.VITE_BASE_URL;
+  const { user, token } = useAuth();
+  console.log(token);
 
   // Fetch batches, students and departments on component mount
   useEffect(() => {
-    Promise.all([
-      axios.get(`${baseUrl}/batches`),
-      axios.get(`${baseUrl}/users?role=student`),
-      axios.get(`${baseUrl}/departments`),
-    ])
-      .then(([batchesResponse, studentsResponse, departmentsResponse]) => {
+    const fetchData = async () => {
+      try {
+        const [batchesResponse, studentsResponse, departmentsResponse] =
+          await Promise.all([
+            axios.get(`${baseUrl}/batches`),
+            axios.get(`${baseUrl}/users`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            // axios.get(`${baseUrl}/departments`),
+          ]);
+
         setBatches(batchesResponse.data);
         setStudents(studentsResponse.data);
         setDepartments(departmentsResponse.data);
         setLoading(false);
-      })
-      .catch((error) => {
+        setError(null);
+      } catch (error) {
         console.error("Error fetching data:", error);
         setLoading(false);
-      });
-  }, []);
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch data. Please try again."
+        );
+      }
+    };
+
+    fetchData();
+  }, [token]);
 
   const handleBatchClick = (batch) => {
     setSelectedBatch(batch);
