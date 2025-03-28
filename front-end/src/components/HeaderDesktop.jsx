@@ -3,10 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import { FaBars, FaUser } from "react-icons/fa"; // Import icons
 
 const HeaderDesktop = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [showUserInfo, setShowUserInfo] = useState(false);
   <p className="hidden md:block">
-    Welcome, {user.name} ({user.role})
+    Welcome, {user.name} ({user.role} {token})
   </p>;
 
   return (

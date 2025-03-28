@@ -11,20 +11,11 @@ const BatchManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddStudentForm, setShowAddStudentForm] = useState(false);
-  const [availableStudents, setAvailableStudents] = useState([]);
 
   const [batchFormData, setBatchFormData] = useState({
     name: "",
     startDate: "",
     description: "",
-  });
-
-  const [newStudentData, setNewStudentData] = useState({
-    name: "",
-    email: "",
-    departmentId: "",
-    batchId: "",
-    existingStudentId: "",
   });
 
   const baseUrl = import.meta.env.VITE_BASE_URL;
@@ -64,13 +55,6 @@ const BatchManagement = () => {
   };
 
   // Handle student form changes
-  const handleStudentFormChange = (e) => {
-    const { name, value } = e.target;
-    setNewStudentData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
 
   // Create new batch
   const handleCreateBatch = (e) => {
@@ -142,108 +126,7 @@ const BatchManagement = () => {
     }
   };
 
-  // Open add student form
-  const handleOpenAddStudentForm = () => {
-    if (!selectedBatch) return;
-
-    // Filter students who are not assigned to any batch or have a different batch assignment
-    const studentsWithoutBatch = students.filter(
-      (student) => !student.batchId || student.batchId !== selectedBatch.id
-    );
-
-    setAvailableStudents(studentsWithoutBatch);
-    setNewStudentData({
-      name: "",
-      email: "",
-      departmentId: "",
-      batchId: selectedBatch.id,
-      existingStudentId: "",
-    });
-    setShowAddStudentForm(true);
-    setShowForm(false);
-  };
-
-  // Add student to batch
-  const handleAddStudentToBatch = (e) => {
-    e.preventDefault();
-
-    // For existing student selected from dropdown
-    if (newStudentData.existingStudentId) {
-      const studentToUpdate = students.find(
-        (student) => student.id === newStudentData.existingStudentId
-      );
-
-      if (studentToUpdate) {
-        const updatedStudent = {
-          ...studentToUpdate,
-          batchId: selectedBatch.id,
-        };
-
-        axios
-          .put(`${baseUrl}/users/${studentToUpdate.id}`, updatedStudent)
-          .then((response) => {
-            const updatedStudents = students.map((student) =>
-              student.id === studentToUpdate.id ? updatedStudent : student
-            );
-            setStudents(updatedStudents);
-            resetStudentForm();
-          })
-          .catch((error) => {
-            console.error("Error updating student:", error);
-          });
-      }
-    }
-    // For creating new student
-    else {
-      const newStudent = {
-        ...newStudentData,
-        batchId: selectedBatch.id,
-        role: "student", // Explicitly set role to student
-      };
-
-      axios
-        .post(`${baseUrl}/users`, newStudent)
-        .then((response) => {
-          setStudents([...students, response.data]);
-          resetStudentForm();
-        })
-        .catch((error) => {
-          console.error("Error creating student:", error);
-        });
-    }
-  };
-
   // Remove student from batch
-  const handleRemoveStudentFromBatch = (studentId) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to remove this student from the batch?"
-    );
-
-    if (confirmed) {
-      const studentToUpdate = students.find(
-        (student) => student.id === studentId
-      );
-
-      if (studentToUpdate) {
-        const updatedStudent = {
-          ...studentToUpdate,
-          batchId: null,
-        };
-
-        axios
-          .put(`${baseUrl}/users/${studentId}`, updatedStudent)
-          .then((response) => {
-            const updatedStudents = students.map((student) =>
-              student.id === studentId ? updatedStudent : student
-            );
-            setStudents(updatedStudents);
-          })
-          .catch((error) => {
-            console.error("Error updating student:", error);
-          });
-      }
-    }
-  };
 
   // Reset forms
   const resetBatchForm = () => {
@@ -252,17 +135,6 @@ const BatchManagement = () => {
       startDate: "",
       description: "",
     });
-  };
-
-  const resetStudentForm = () => {
-    setNewStudentData({
-      name: "",
-      email: "",
-      departmentId: "",
-      batchId: "",
-      existingStudentId: "",
-    });
-    setShowAddStudentForm(false);
   };
 
   const handleCancel = () => {
@@ -423,7 +295,6 @@ const BatchManagement = () => {
                   <select
                     name="existingStudentId"
                     value={newStudentData.existingStudentId || ""}
-                    onChange={handleStudentFormChange}
                     className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                   >
                     <option value="">-- Create New Student --</option>
@@ -600,16 +471,6 @@ const BatchManagement = () => {
 
               {/* Students List */}
               <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-semibold text-lg">Students</h3>
-                  <button
-                    onClick={handleOpenAddStudentForm}
-                    className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                  >
-                    Add Students
-                  </button>
-                </div>
-
                 <div className="border rounded-lg overflow-hidden">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -622,9 +483,6 @@ const BatchManagement = () => {
                         </th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
                           Department
-                        </th>
-                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                          Actions
                         </th>
                       </tr>
                     </thead>
@@ -649,16 +507,6 @@ const BatchManagement = () => {
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                               {getDepartmentName(student.departmentId)}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-right text-sm">
-                              <button
-                                onClick={() =>
-                                  handleRemoveStudentFromBatch(student.id)
-                                }
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Remove
-                              </button>
                             </td>
                           </tr>
                         ))

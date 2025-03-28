@@ -168,29 +168,8 @@ const CourseManagement = () => {
   };
 
   // Open course for editing
-  const handleEditCourse = (course) => {
-    setCourseFormData({
-      name: course.name,
-      description: course.description,
-      SubjectIds: course.SubjectIds || [],
-      BatchIds: course.BatchIds || [],
-      totalCredits: course.totalCredits || 0,
-      isActive: course.isActive,
-    });
-    setSelectedCourse(course);
-    setIsEditMode(true);
-    setShowForm(true);
-    setShowBatchAssignForm(false);
-  };
 
   // Open batch assignment form
-  const handleBatchAssignment = (course) => {
-    setSelectedCourse(course);
-    setSelectedBatches(course.BatchIds || []);
-    setShowBatchAssignForm(true);
-    setShowForm(false);
-  };
-
   // Assign batches to a course
   const handleAssignBatches = async (e) => {
     e.preventDefault();

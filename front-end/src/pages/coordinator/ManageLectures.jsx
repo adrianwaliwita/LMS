@@ -1,687 +1,423 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const CourseManagement = () => {
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [activeTab, setActiveTab] = useState("courses");
-  const [selectedBatch, setSelectedBatch] = useState(null);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assignmentType, setAssignmentType] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+const LectureBooking = () => {
+  // State for dropdown options and selection stages
+  const [courses, setCourses] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [modules, setModules] = useState([]);
+  const [lecturers, setLecturers] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
+  const [equipment, setEquipment] = useState([]);
 
-  // New state for course/batch creation
-  const [showNewCourseModal, setShowNewCourseModal] = useState(false);
-  const [showNewBatchModal, setShowNewBatchModal] = useState(false);
-  const [newCourseData, setNewCourseData] = useState({
-    name: "",
-    time: "",
-    instructor: "",
-    location: "",
-    description: "",
+  // Selection states
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [selectedModule, setSelectedModule] = useState("");
+
+  // Form data state
+  const [lectureFormData, setLectureFormData] = useState({
+    courseId: "",
+    batchId: "",
+    moduleId: "",
+    lecturerId: "",
+    roomId: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    equipmentIds: [],
   });
-  const [newBatchData, setNewBatchData] = useState({
-    name: "",
-    startDate: "",
-  });
 
-  // Mock data
-  const [courses, setCourses] = useState([
-    {
-      id: 1,
-      name: "Math 101",
-      time: "Monday 9:00 AM - 11:00 AM",
-      instructor: "Dr. Smith",
-      location: "Room A1",
-      description: "Introduction to Mathematics",
-      enrolledUsers: 24,
-      assignedBatches: ["Batch A", "Batch C"],
-    },
-    {
-      id: 2,
-      name: "Physics 202",
-      time: "Wednesday 2:00 PM - 4:00 PM",
-      instructor: "Prof. Johnson",
-      location: "Lab B2",
-      description: "Fundamentals of Physics",
-      enrolledUsers: 18,
-      assignedBatches: ["Batch B"],
-    },
-    {
-      id: 3,
-      name: "CS 305",
-      time: "Friday 11:00 AM - 1:00 PM",
-      instructor: "Dr. Lee",
-      location: "Room C3",
-      description: "Data Structures and Algorithms",
-      enrolledUsers: 30,
-      assignedBatches: ["Batch A", "Batch D"],
-    },
-  ]);
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [batches, setBatches] = useState([
-    { id: 1, name: "Batch A", userCount: 45, startDate: "Jan 10, 2025" },
-    { id: 2, name: "Batch B", userCount: 38, startDate: "Feb 15, 2025" },
-    { id: 3, name: "Batch C", userCount: 42, startDate: "Mar 5, 2025" },
-    { id: 4, name: "Batch D", userCount: 36, startDate: "Apr 1, 2025" },
-  ]);
+  // Base URL for API calls
+  const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
-  const users = [
-    {
-      id: 1,
-      name: "Jane Cooper",
-      email: "jane@example.com",
-      batch: "Batch A",
-      courses: 2,
-    },
-    {
-      id: 2,
-      name: "Alex Johnson",
-      email: "alex@example.com",
-      batch: "Batch B",
-      courses: 1,
-    },
-    {
-      id: 3,
-      name: "Maria Garcia",
-      email: "maria@example.com",
-      batch: "Batch A",
-      courses: 3,
-    },
-    {
-      id: 4,
-      name: "Tom Wilson",
-      email: "tom@example.com",
-      batch: "Batch C",
-      courses: 2,
-    },
-    {
-      id: 5,
-      name: "Sarah Lee",
-      email: "sarah@example.com",
-      batch: "Batch D",
-      courses: 1,
-    },
-  ];
+  // Fetch courses on component mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`${baseUrl}/courses`);
+        setCourses(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        setError("Failed to fetch courses");
+        setIsLoading(false);
+      }
+    };
 
-  const handleCourseClick = (course) => {
-    setSelectedCourse(course);
+    fetchCourses();
+  }, []);
+
+  // Handle course selection
+  const handleCourseSelect = async (courseId) => {
+    setSelectedCourse(courseId);
+    setSelectedBatch("");
+    setSelectedModule("");
+
+    try {
+      // Fetch batches for the selected course
+      const batchesResponse = await axios.get(
+        `${baseUrl}/batches?courseId=${courseId}`
+      );
+      setBatches(batchesResponse.data);
+
+      // Reset subsequent dropdowns
+      setModules([]);
+      setLecturers([]);
+      setClassrooms([]);
+      setEquipment([]);
+
+      // Update form data
+      setLectureFormData((prev) => ({
+        ...prev,
+        courseId: courseId,
+        batchId: "",
+        moduleId: "",
+      }));
+    } catch (err) {
+      setError("Failed to fetch batches for the selected course");
+    }
   };
 
-  const handleBatchClick = (batch) => {
-    setSelectedBatch(batch);
+  // Handle batch selection
+  const handleBatchSelect = async (batchId) => {
+    setSelectedBatch(batchId);
+    setSelectedModule("");
+
+    try {
+      // Fetch modules for the selected course and batch
+      const modulesResponse = await axios.get(
+        `${baseUrl}/modules?courseId=${selectedCourse}&batchId=${batchId}`
+      );
+      setModules(modulesResponse.data);
+
+      // Reset subsequent dropdowns
+      setLecturers([]);
+      setClassrooms([]);
+      setEquipment([]);
+
+      // Update form data
+      setLectureFormData((prev) => ({
+        ...prev,
+        batchId: batchId,
+        moduleId: "",
+      }));
+    } catch (err) {
+      setError("Failed to fetch modules for the selected batch");
+    }
   };
 
-  const handleUserSelection = (userId) => {
-    setSelectedUsers((prevSelected) =>
-      prevSelected.includes(userId)
-        ? prevSelected.filter((id) => id !== userId)
-        : [...prevSelected, userId]
-    );
+  // Handle module selection
+  const handleModuleSelect = (moduleId) => {
+    setSelectedModule(moduleId);
+
+    // Update form data
+    setLectureFormData((prev) => ({
+      ...prev,
+      moduleId: moduleId,
+    }));
   };
 
-  const handleAssignCourse = (type) => {
-    setAssignmentType(type);
-    setShowAssignModal(true);
-  };
-
-  const confirmAssignment = () => {
-    // In a real application, this would make an API call
-    alert(
-      `Course ${selectedCourse.name} assigned to ${
-        assignmentType === "batch"
-          ? selectedBatch.name
-          : selectedUsers.length + " users"
-      }`
-    );
-    setShowAssignModal(false);
-    setSelectedBatch(null);
-    setSelectedUsers([]);
-  };
-
-  // Handle new course form changes
-  const handleCourseFormChange = (e) => {
+  // Handle date and time input
+  const handleDateTimeChange = (e) => {
     const { name, value } = e.target;
-    setNewCourseData((prev) => ({
+    setLectureFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  // Handle new batch form changes
-  const handleBatchFormChange = (e) => {
-    const { name, value } = e.target;
-    setNewBatchData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  // Fetch lecture availability
+  const fetchLectureAvailability = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/lecture-availability`, {
+        params: {
+          courseId: selectedCourse,
+          batchId: selectedBatch,
+          moduleId: selectedModule,
+          date: lectureFormData.date,
+          startTime: lectureFormData.startTime,
+          endTime: lectureFormData.endTime,
+        },
+      });
+
+      const { lecturers, classrooms, equipment } = response.data;
+      setLecturers(lecturers);
+      setClassrooms(classrooms);
+      setEquipment(equipment);
+    } catch (err) {
+      setError("Failed to fetch lecture availability");
+    }
   };
 
-  // Create new course
-  const handleCreateCourse = () => {
-    const newCourse = {
-      id: courses.length + 1,
-      ...newCourseData,
-      enrolledUsers: 0,
-      assignedBatches: [],
-    };
+  // Create lecture handler
+  const handleCreateLecture = async (e) => {
+    e.preventDefault();
 
-    setCourses((prev) => [...prev, newCourse]);
-    setNewCourseData({
-      name: "",
-      time: "",
-      instructor: "",
-      location: "",
-      description: "",
-    });
-    setShowNewCourseModal(false);
+    try {
+      const response = await axios.post(`${baseUrl}/lectures`, lectureFormData);
+      // Handle successful lecture creation (e.g., show success message, reset form)
+      console.log("Lecture created:", response.data);
+
+      // Reset form and states
+      setSelectedCourse("");
+      setSelectedBatch("");
+      setSelectedModule("");
+      setLectureFormData({
+        courseId: "",
+        batchId: "",
+        moduleId: "",
+        lecturerId: "",
+        roomId: "",
+        date: "",
+        startTime: "",
+        endTime: "",
+        equipmentIds: [],
+      });
+
+      // Reset dropdowns
+      setBatches([]);
+      setModules([]);
+      setLecturers([]);
+      setClassrooms([]);
+      setEquipment([]);
+    } catch (err) {
+      setError("Failed to create lecture");
+    }
   };
 
-  // Create new batch
-  const handleCreateBatch = () => {
-    const newBatch = {
-      id: batches.length + 1,
-      ...newBatchData,
-      userCount: 0,
-    };
-
-    setBatches((prev) => [...prev, newBatch]);
-    setNewBatchData({
-      name: "",
-      startDate: "",
-    });
-    setShowNewBatchModal(false);
-  };
-
-  const filteredCourses = courses.filter(
-    (course) =>
-      course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredBatches = batches.filter((batch) =>
-    batch.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  // Render method with staged selection
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-blue-700 text-white p-4 shadow">
-        <div className="container mx-auto">
-          <h1 className="text-2xl font-bold">Course Management System</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Lecture Booking</h1>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
         </div>
-      </header>
+      )}
 
-      {/* Main Content */}
-      <div className="container mx-auto flex flex-col flex-grow p-4">
-        {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-6">
-          <button
-            className={`py-2 px-4 font-medium ${
-              activeTab === "courses"
-                ? "text-blue-700 border-b-2 border-blue-700"
-                : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("courses")}
-          >
-            Courses
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${
-              activeTab === "batches"
-                ? "text-blue-700 border-b-2 border-blue-700"
-                : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("batches")}
-          >
-            Batches
-          </button>
-          <button
-            className={`py-2 px-4 font-medium ${
-              activeTab === "Students"
-                ? "text-blue-700 border-b-2 border-blue-700"
-                : "text-gray-500"
-            }`}
-            onClick={() => setActiveTab("users")}
-          >
-            Users
-          </button>
-        </div>
-
-        {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          {/* Search Bar */}
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full sm:w-1/2 p-2 border border-gray-300 rounded"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-
-          {/* Action Buttons */}
-          {activeTab === "courses" && !selectedCourse && (
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              onClick={() => setShowNewCourseModal(true)}
-            >
-              Create New Course
-            </button>
-          )}
-
-          {activeTab === "batches" && (
-            <button
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              onClick={() => setShowNewBatchModal(true)}
-            >
-              Create New Batch
-            </button>
-          )}
-
-          {activeTab === "users" && selectedUsers.length > 0 && (
-            <button className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800">
-              Assign Course to Selected ({selectedUsers.length})
-            </button>
-          )}
-        </div>
-
-        {/* Content based on active tab */}
-        {activeTab === "courses" && !selectedCourse && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredCourses.map((course) => (
-              <div
-                key={course.id}
-                className="border bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleCourseClick(course)}
-              >
-                <h3 className="text-lg font-semibold text-blue-700">
-                  {course.name}
-                </h3>
-                <p className="text-gray-700 mt-2">{course.time}</p>
-                <p className="text-gray-700">
-                  <span className="font-semibold">Instructor:</span>{" "}
-                  {course.instructor}
-                </p>
-                <div className="mt-3 flex justify-between text-sm text-gray-500">
-                  <span>{course.enrolledUsers} users</span>
-                  <span>{course.assignedBatches.length} batches</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "courses" && selectedCourse && (
-          <div className="bg-white border p-6 rounded-lg shadow w-full max-w-3xl mx-auto">
-            <div className="flex justify-between items-start mb-6">
-              <h2 className="text-2xl font-bold text-blue-700">
-                {selectedCourse.name}
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  onClick={() => handleAssignCourse("batch")}
-                >
-                  Assign to Batch
-                </button>
-                <button
-                  className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                  onClick={() => handleAssignCourse("user")}
-                >
-                  Assign to Users
-                </button>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <p className="pb-2 border-b border-gray-200">
-                  <span className="font-semibold">Instructor:</span>{" "}
-                  {selectedCourse.instructor}
-                </p>
-                <p className="pb-2 border-b border-gray-200">
-                  <span className="font-semibold">Schedule:</span>{" "}
-                  {selectedCourse.time}
-                </p>
-                <p className="pb-2 border-b border-gray-200">
-                  <span className="font-semibold">Location:</span>{" "}
-                  {selectedCourse.location}
-                </p>
-                <p className="pb-2">
-                  <span className="font-semibold">Description:</span>{" "}
-                  {selectedCourse.description}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Assigned Batches:</h3>
-                <ul className="bg-gray-50 p-3 rounded border">
-                  {selectedCourse.assignedBatches.length > 0 ? (
-                    selectedCourse.assignedBatches.map((batch, index) => (
-                      <li
-                        key={index}
-                        className="py-1 border-b last:border-b-0 border-gray-200"
-                      >
-                        {batch}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="py-1 text-gray-500">No batches assigned</li>
-                  )}
-                </ul>
-              </div>
-            </div>
-
-            <button
-              className="mt-6 px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
-              onClick={() => setSelectedCourse(null)}
-            >
-              Back to Course List
-            </button>
-          </div>
-        )}
-
-        {activeTab === "batches" && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredBatches.map((batch) => (
-              <div
-                key={batch.id}
-                className="border bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleBatchClick(batch)}
-              >
-                <h3 className="text-lg font-semibold text-blue-700">
-                  {batch.name}
-                </h3>
-                <p className="text-gray-700 mt-2">
-                  <span className="font-semibold">Users:</span>{" "}
-                  {batch.userCount}
-                </p>
-                <p className="text-gray-700">
-                  <span className="font-semibold">Start Date:</span>{" "}
-                  {batch.startDate}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeTab === "users" && (
-          <div className="bg-white border rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    <input
-                      type="checkbox"
-                      onChange={() => {
-                        if (selectedUsers.length === users.length) {
-                          setSelectedUsers([]);
-                        } else {
-                          setSelectedUsers(users.map((user) => user.id));
-                        }
-                      }}
-                      checked={
-                        selectedUsers.length === users.length &&
-                        users.length > 0
-                      }
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Batch
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Courses
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className={
-                      selectedUsers.includes(user.id) ? "bg-blue-50" : ""
-                    }
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => handleUserSelection(user.id)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.batch}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.courses}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Course Selection */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Select Course
+        </label>
+        <select
+          value={selectedCourse}
+          onChange={(e) => handleCourseSelect(e.target.value)}
+          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          disabled={isLoading}
+        >
+          <option value="">Select a Course</option>
+          {courses.map((course) => (
+            <option key={course.id} value={course.id}>
+              {course.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* Assignment Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">
-              Assign {selectedCourse.name} to{" "}
-              {assignmentType === "batch" ? "Batch" : "Users"}
-            </h3>
+      {/* Batch Selection (only after course is selected) */}
+      {selectedCourse && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Batch
+          </label>
+          <select
+            value={selectedBatch}
+            onChange={(e) => handleBatchSelect(e.target.value)}
+            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          >
+            <option value="">Select a Batch</option>
+            {batches.map((batch) => (
+              <option key={batch.id} value={batch.id}>
+                {batch.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-            {assignmentType === "batch" ? (
-              <div className="mb-4">
-                <label className="block text-gray-700 mb-2">
-                  Select Batch:
-                </label>
-                <select
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={selectedBatch ? selectedBatch.id : ""}
-                  onChange={(e) => {
-                    const batchId = parseInt(e.target.value);
-                    setSelectedBatch(batches.find((b) => b.id === batchId));
-                  }}
-                >
-                  <option value="">Select a batch</option>
-                  {batches.map((batch) => (
-                    <option key={batch.id} value={batch.id}>
-                      {batch.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <p className="text-gray-700 mb-2">
-                  Selected Users: {selectedUsers.length}
-                </p>
-                {selectedUsers.length === 0 && (
-                  <p className="text-red-500 text-sm">
-                    Please select users from the Users tab first
-                  </p>
-                )}
-              </div>
-            )}
+      {/* Module Selection (only after batch is selected) */}
+      {selectedBatch && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Module
+          </label>
+          <select
+            value={selectedModule}
+            onChange={(e) => handleModuleSelect(e.target.value)}
+            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          >
+            <option value="">Select a Module</option>
+            {modules.map((module) => (
+              <option key={module.id} value={module.id}>
+                {module.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-            <div className="flex justify-end space-x-2 mt-4">
-              <button
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                onClick={() => setShowAssignModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
-                onClick={confirmAssignment}
-                disabled={
-                  (assignmentType === "batch" && !selectedBatch) ||
-                  (assignmentType === "user" && selectedUsers.length === 0)
-                }
-              >
-                Confirm Assignment
-              </button>
+      {/* Date and Time Input (only after module is selected) */}
+      {selectedModule && (
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date
+            </label>
+            <input
+              type="date"
+              name="date"
+              value={lectureFormData.date}
+              onChange={handleDateTimeChange}
+              className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Start Time
+              </label>
+              <input
+                type="time"
+                name="startTime"
+                value={lectureFormData.startTime}
+                onChange={handleDateTimeChange}
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Time
+              </label>
+              <input
+                type="time"
+                name="endTime"
+                value={lectureFormData.endTime}
+                onChange={handleDateTimeChange}
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+              />
             </div>
           </div>
         </div>
       )}
 
-      {/* New Course Modal */}
-      {showNewCourseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Create New Course</h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 mb-1">Course Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newCourseData.name}
-                  onChange={handleCourseFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., Biology 101"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-1">Schedule</label>
-                <input
-                  type="text"
-                  name="time"
-                  value={newCourseData.time}
-                  onChange={handleCourseFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., Monday 9:00 AM - 11:00 AM"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-1">Instructor</label>
-                <input
-                  type="text"
-                  name="instructor"
-                  value={newCourseData.instructor}
-                  onChange={handleCourseFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., Dr. Smith"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-1">Location</label>
-                <input
-                  type="text"
-                  name="location"
-                  value={newCourseData.location}
-                  onChange={handleCourseFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., Room A1"
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  value={newCourseData.description}
-                  onChange={handleCourseFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  rows="3"
-                  placeholder="Brief description of the course"
-                ></textarea>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-6">
-              <button
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                onClick={() => setShowNewCourseModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                onClick={handleCreateCourse}
-                disabled={!newCourseData.name || !newCourseData.instructor}
-              >
-                Create Course
-              </button>
-            </div>
+      {/* Fetch Availability Button */}
+      {lectureFormData.date &&
+        lectureFormData.startTime &&
+        lectureFormData.endTime && (
+          <div className="mb-4">
+            <button
+              onClick={fetchLectureAvailability}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg"
+            >
+              Check Availability
+            </button>
           </div>
+        )}
+
+      {/* Lecturer Selection */}
+      {lecturers.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Lecturer
+          </label>
+          <select
+            name="lecturerId"
+            value={lectureFormData.lecturerId}
+            onChange={(e) =>
+              setLectureFormData((prev) => ({
+                ...prev,
+                lecturerId: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          >
+            <option value="">Select a Lecturer</option>
+            {lecturers.map((lecturer) => (
+              <option key={lecturer.id} value={lecturer.id}>
+                {lecturer.name}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* New Batch Modal */}
-      {showNewBatchModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Create New Batch</h3>
+      {/* Classroom Selection */}
+      {classrooms.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Classroom
+          </label>
+          <select
+            name="roomId"
+            value={lectureFormData.roomId}
+            onChange={(e) =>
+              setLectureFormData((prev) => ({
+                ...prev,
+                roomId: e.target.value,
+              }))
+            }
+            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          >
+            <option value="">Select a Classroom</option>
+            {classrooms.map((classroom) => (
+              <option key={classroom.id} value={classroom.id}>
+                {classroom.name} (Capacity: {classroom.capacity})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 mb-1">Batch Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newBatchData.name}
-                  onChange={handleBatchFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., Batch E"
-                />
-              </div>
+      {/* Equipment Selection */}
+      {equipment.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Select Equipment (Optional)
+          </label>
+          <select
+            multiple
+            name="equipmentIds"
+            value={lectureFormData.equipmentIds}
+            onChange={(e) => {
+              const selectedEquipment = Array.from(
+                e.target.selectedOptions
+              ).map((option) => option.value);
+              setLectureFormData((prev) => ({
+                ...prev,
+                equipmentIds: selectedEquipment,
+              }));
+            }}
+            className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg"
+          >
+            {equipment.map((eq) => (
+              <option key={eq.id} value={eq.id}>
+                {eq.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
-              <div>
-                <label className="block text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="text"
-                  name="startDate"
-                  value={newBatchData.startDate}
-                  onChange={handleBatchFormChange}
-                  className="w-full p-2 border border-gray-300 rounded"
-                  placeholder="e.g., May 15, 2025"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-6">
-              <button
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                onClick={() => setShowNewBatchModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                onClick={handleCreateBatch}
-                disabled={!newBatchData.name || !newBatchData.startDate}
-              >
-                Create Batch
-              </button>
-            </div>
-          </div>
+      {/* Create Lecture Button */}
+      {lectureFormData.lecturerId && lectureFormData.roomId && (
+        <div>
+          <button
+            onClick={handleCreateLecture}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg"
+          >
+            Create Lecture
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-export default CourseManagement;
+export default LectureBooking;

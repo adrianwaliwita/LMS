@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 import Schedule from "../components/MiniSchedule";
 import NavlayOut from "../layout/NavLayout";
 import Announcements from "../components/Announcements";
-import AdminDashboard from "../components/AdminDashboard";
-import StudentDashboard from "../components/StudentDashboard";
+import AdminDashboard from "./admin/AdminDashboard";
+import StudentDashboard from "./student/StudentDashboard";
 const Dashboard = () => {
   const { user } = useAuth();
 

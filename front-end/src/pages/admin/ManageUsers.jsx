@@ -11,7 +11,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [batches, setBatches] = useState([]);
   // UI & Form States
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
@@ -23,6 +23,7 @@ const UserManagement = () => {
     email: "",
     role: "student",
     departmentId: "",
+    batchId: "",
   });
 
   // Fetch users and departments on mount
@@ -30,10 +31,14 @@ const UserManagement = () => {
     Promise.all([
       axios.get(`${baseUrl}/users`),
       axios.get(`${baseUrl}/departments`),
+      axios.get(`${baseUrl}/batches`),
     ])
-      .then(([usersRes, departmentsRes]) => {
+      .then(([usersRes, departmentsRes, batchesRes]) => {
+        console.log(batchesRes.data);
+
         setUsers(usersRes.data);
         setDepartments(departmentsRes.data);
+        setBatches(batchesRes.data);
         setLoading(false);
       })
       .catch((error) => {
@@ -73,6 +78,7 @@ const UserManagement = () => {
     try {
       const newUser = {
         ...userFormData,
+        batchId: userFormData.role === "student" ? userFormData.batchId : null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -130,7 +136,11 @@ const UserManagement = () => {
     setIsEditMode(false);
     setShowForm(false);
   };
-
+  const getBatchName = (batchId) => {
+    if (!batchId) return "No Batch";
+    const batch = batches.find((b) => b.batchId === batchId);
+    return batch ? batch.name : "Unknown Batch";
+  };
   // Filter users based on search and role
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
@@ -300,6 +310,26 @@ const UserManagement = () => {
                   <option value="admin">Admin</option>
                 </select>
               </div>
+              {userFormData.role === "student" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Batch
+                  </label>
+                  <select
+                    name="batchId"
+                    value={userFormData.batchId}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                  >
+                    <option value="">Select Batch</option>
+                    {batches.map((batch) => (
+                      <option key={batch.batchId} value={batch.batchId}>
+                        {batch.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Department
@@ -321,6 +351,7 @@ const UserManagement = () => {
                   ))}
                 </select>
               </div>
+
               <div className="flex justify-end gap-4 mt-6">
                 <button
                   type="button"
@@ -368,7 +399,14 @@ const UserManagement = () => {
                 <span className="font-semibold">Department:</span>{" "}
                 {getDepartmentName(selectedUser.departmentId)}
               </p>
+              {selectedUser.role === "student" && (
+                <p>
+                  <span className="font-semibold">Batch:</span>{" "}
+                  {getBatchName(selectedUser.batchId)}
+                </p>
+              )}
             </div>
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setSelectedUser(null)}

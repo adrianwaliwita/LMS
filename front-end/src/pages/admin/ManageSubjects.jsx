@@ -22,9 +22,7 @@ const SubjectManagement = () => {
     name: "",
     description: "",
     credits: 0,
-    courseId: "",
-    time: "",
-    location: "",
+    courseIds: [],
   });
 
   // Fetch subjects and courses on mount
@@ -44,18 +42,23 @@ const SubjectManagement = () => {
       });
   }, []);
 
-  // Helper function to format time
-  const formatTime = (timeString) => {
-    return timeString || "Not Specified";
-  };
-
   // Form event handlers
   const handleSubjectInputChange = (e) => {
-    const { name, value } = e.target;
-    setSubjectFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type, options } = e.target;
+    if (type === "select-multiple") {
+      const selectedValues = Array.from(options)
+        .filter((option) => option.selected)
+        .map((option) => option.value);
+      setSubjectFormData((prev) => ({
+        ...prev,
+        [name]: selectedValues,
+      }));
+    } else {
+      setSubjectFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   // Create a new subject
@@ -123,9 +126,7 @@ const SubjectManagement = () => {
       name: subject.name,
       description: subject.description,
       credits: subject.credits || 0,
-      courseId: subject.courseId || "",
-      time: subject.time || "",
-      location: subject.location || "",
+      courseIds: subject.courseIds || [],
     });
     setSelectedSubject(subject);
     setIsEditMode(true);
@@ -138,9 +139,7 @@ const SubjectManagement = () => {
       name: "",
       description: "",
       credits: 0,
-      courseId: "",
-      time: "",
-      location: "",
+      courseIds: [],
     });
     setIsEditMode(false);
     setShowForm(false);
@@ -153,7 +152,7 @@ const SubjectManagement = () => {
       (subject.description &&
         subject.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCourse =
-      filterCourse === "all" || subject.courseId === filterCourse;
+      filterCourse === "all" || subject.courseIds?.includes(filterCourse);
     return matchesSearch && matchesCourse;
   });
 
@@ -241,9 +240,16 @@ const SubjectManagement = () => {
                       {subject.credits || 0}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-semibold">Course:</span>{" "}
-                      {courses.find((c) => c.id === subject.courseId)?.name ||
-                        "Not Assigned"}
+                      <span className="font-semibold">Courses:</span>{" "}
+                      {subject.courseIds?.length > 0
+                        ? subject.courseIds
+                            .map(
+                              (id) =>
+                                courses.find((c) => c.id === id)?.name ||
+                                "Unknown Course"
+                            )
+                            .join(", ")
+                        : "Not Assigned"}
                     </p>
 
                     <div className="mt-3">
@@ -314,49 +320,21 @@ const SubjectManagement = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Course
+                    Associated Courses
                   </label>
                   <select
-                    name="courseId"
-                    value={subjectFormData.courseId}
+                    name="courseIds"
+                    multiple
+                    value={subjectFormData.courseIds}
                     onChange={handleSubjectInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                   >
-                    <option value="">Select a Course</option>
                     {courses.map((course) => (
                       <option key={course.id} value={course.id}>
                         {course.name}
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Time
-                  </label>
-                  <input
-                    type="text"
-                    name="time"
-                    value={subjectFormData.time}
-                    onChange={handleSubjectInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                    placeholder="e.g., Monday 9:00 AM - 11:00 AM"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={subjectFormData.location}
-                    onChange={handleSubjectInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                    placeholder="e.g., Computer Lab A"
-                  />
                 </div>
               </div>
               <div className="flex justify-end gap-4 mt-6">
@@ -402,17 +380,16 @@ const SubjectManagement = () => {
                 {selectedSubject.credits || 0}
               </p>
               <p>
-                <span className="font-semibold">Course:</span>{" "}
-                {courses.find((c) => c.id === selectedSubject.courseId)?.name ||
-                  "Not Assigned"}
-              </p>
-              <p>
-                <span className="font-semibold">Time:</span>{" "}
-                {formatTime(selectedSubject.time)}
-              </p>
-              <p>
-                <span className="font-semibold">Location:</span>{" "}
-                {selectedSubject.location || "Not Specified"}
+                <span className="font-semibold">Courses:</span>{" "}
+                {selectedSubject.courseIds?.length > 0
+                  ? selectedSubject.courseIds
+                      .map(
+                        (id) =>
+                          courses.find((c) => c.id === id)?.name ||
+                          "Unknown Course"
+                      )
+                      .join(", ")
+                  : "Not Assigned"}
               </p>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
@@ -423,18 +400,7 @@ const SubjectManagement = () => {
                 Back to Subjects
               </button>
               <button
-                onClick={() => {
-                  setSubjectFormData({
-                    name: selectedSubject.name,
-                    description: selectedSubject.description,
-                    credits: selectedSubject.credits || 0,
-                    courseId: selectedSubject.courseId || "",
-                    time: selectedSubject.time || "",
-                    location: selectedSubject.location || "",
-                  });
-                  setIsEditMode(true);
-                  setShowForm(true);
-                }}
+                onClick={() => handleEditSubject(selectedSubject)}
                 className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
               >
                 Edit Subject

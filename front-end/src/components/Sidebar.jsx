@@ -14,42 +14,44 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const menu = {
     admin: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage Users", path: "/manage-users" }, //during student creation student can be assigned to a batch
+      { name: "Manage Users", path: "/manage-users" }, //done
       //leturer subjects has to be assigned to the lecturers
 
-      { name: "Manage Batches", path: "/manage-batches" }, //admin can make and manage batches
+      { name: "Manage Batches", path: "/manage-batches" }, //done
       { name: "Manage Courses", path: "/manage-courses" }, //admin can make and manage Courses
 
       { name: "Manage Resources", path: "/manage-resources" }, //can create resources and classrooms
       { name: "Manage Subjects", path: "/manage-subjects" }, //can create resources and classrooms
-      { name: "Profile Settings", path: "/profile" },
 
-      { name: "Profile Settings", path: "/profile" },
+      { name: "Profile Settings", path: `/profile` },
     ],
 
     lecturer: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to subjects from students all documents are uploaded from the coordinator
-      { name: "Profile Settings", path: "/profile" },
+      { name: "Profile Settings", path: `/profile` },
     ],
 
     coordinator: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Subjects", path: "/manage-subjects" },
-      { name: "Manage Students", path: "/manage-users" }, //during student creation student can be assigned to a batch
-      { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
-      { name: "Manage Lecture Scheduling & Resources", path: "/assignment" }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the subject, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
-      { name: "Announcements", path: "/announcements" },
+      { name: "Manage Students", path: "/manage-students" }, //done
 
-      { name: "Profile Settings", path: "/profile" },
+      { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
+      {
+        name: "Manage Lecture Scheduling & Resources",
+        path: "/manage-lectures",
+      }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the subject, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
+      { name: "Manage Announcements", path: "/manage-announcements" },
+
+      { name: "Profile Settings", path: `/profile` },
     ],
 
     student: [
       { name: "Home", path: "/dashboard" },
       { name: "My Subjects", path: "/subjects" }, //show schedules of the student
       { name: "Submit Assignments", path: "/assignment" },
-
-      { name: "Profile Settings", path: "/profile" },
+      { name: "Profile Settings", path: `/profile` },
     ],
   };
   const handleLogout = () => {

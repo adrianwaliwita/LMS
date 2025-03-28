@@ -17,7 +17,6 @@ const ProfileSettings = () => {
     profileImage: null,
     preferences: {
       emailNotifications: true,
-      darkMode: false,
       language: "English",
     },
   };
@@ -91,15 +90,6 @@ const ProfileSettings = () => {
     }
   };
 
-  // Handle profile image upload
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfileImage(URL.createObjectURL(file));
-      // In a real app, you would upload this file to a server
-    }
-  };
-
   // Save profile changes
   const handleSaveChanges = () => {
     // In a real app, you would send this data to an API
@@ -140,50 +130,12 @@ const ProfileSettings = () => {
           {/* Profile header with image and role info */}
           <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
             <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-blue-700">
-                  {profileImage ? (
-                    <img
-                      src={profileImage}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-4xl text-blue-700">
-                      {formData.name.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <label className="absolute bottom-0 right-0 bg-blue-700 text-white p-2 rounded-full cursor-pointer hover:bg-blue-800 transition-colors">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                  />
-                </label>
-              </div>
               <div>
                 <h2 className="text-xl font-bold">{formData.name}</h2>
                 <p className="text-gray-600">{formData.email}</p>
                 <div className="mt-2 inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium capitalize">
                   {formData.role}
                 </div>
-                <p className="mt-2 text-gray-700">
-                  {roleDescriptions[formData.role] || "User"}
-                </p>
               </div>
             </div>
           </div>
@@ -212,18 +164,6 @@ const ProfileSettings = () => {
             </button>
 
             {/* Admin-only tab */}
-            {user.role === "admin" && (
-              <button
-                className={`py-3 px-6 font-medium ${
-                  activeTab === "admin"
-                    ? "text-blue-700 border-b-2 border-blue-700"
-                    : "text-gray-600"
-                }`}
-                onClick={() => setActiveTab("admin")}
-              >
-                Admin Settings
-              </button>
-            )}
           </div>
 
           {/* Settings content */}
@@ -327,57 +267,47 @@ const ProfileSettings = () => {
               </div>
             )}
 
-            {/* Admin-specific settings */}
-            {activeTab === "admin" && user.role === "admin" && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-blue-700">
-                  Admin Settings
+            {user.role === "admin" && activeTab === "general" && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-blue-700 mb-3">
+                  Admin Information
                 </h3>
-
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      System Maintenance Mode
+                      Admin ID
                     </label>
-                    <div className="flex items-center">
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none">
-                        <input
-                          type="checkbox"
-                          id="maintenanceMode"
-                          className="sr-only"
-                        />
-                        <div className="w-10 h-5 bg-gray-300 rounded-full shadow-inner"></div>
-                        <div className="absolute w-5 h-5 bg-white rounded-full shadow transform translate-x-0"></div>
-                      </div>
-                      <span>Off</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      User Registration
-                    </label>
-                    <select className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option value="open">Open</option>
-                      <option value="invite">Invite Only</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      System Notification
-                    </label>
-                    <textarea
+                    <input
+                      type="text"
+                      value="ADM-2022-1845"
                       className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
-                      placeholder="Enter a system-wide notification message"
-                    ></textarea>
+                      readOnly
+                    />
                   </div>
                 </div>
               </div>
             )}
 
+            {user.role === "coordinator" && activeTab === "general" && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-blue-700 mb-3">
+                  Coordinator Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">
+                      Coordinator ID
+                    </label>
+                    <input
+                      type="text"
+                      value="COORD-2022-1845"
+                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Role-specific content for lecturers */}
             {user.role === "lecturer" && activeTab === "general" && (
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -394,16 +324,6 @@ const ProfileSettings = () => {
                       value="FAC-2022-0451"
                       className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                       readOnly
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Office Hours
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Mon-Wed 2-4pm"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -427,17 +347,6 @@ const ProfileSettings = () => {
                       className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                       readOnly
                     />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Academic Year
-                    </label>
-                    <select className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option>First Year</option>
-                      <option>Second Year</option>
-                      <option>Third Year</option>
-                      <option>Fourth Year</option>
-                    </select>
                   </div>
                 </div>
               </div>

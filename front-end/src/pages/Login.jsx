@@ -7,7 +7,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login } = useAuth();
+  const { login, user, token } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

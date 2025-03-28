@@ -1,5 +1,5 @@
 import React from "react";
-import Announcements from "./Announcements";
+import Announcements from "../../components/Announcements";
 import axios from "axios";
 import { useState, useEffect } from "react";
 
