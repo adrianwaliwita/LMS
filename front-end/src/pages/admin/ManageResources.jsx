@@ -1,233 +1,255 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { useAuth } from "../../context/AuthContext";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import apiClient from "../../api/apiClient";
 
 const ResourceManagement = () => {
-  // State for classrooms and equipment
+  const { user } = useAuth();
   const [classrooms, setClassrooms] = useState([]);
   const [equipment, setEquipment] = useState([]);
-
-  // UI State
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedResource, setSelectedResource] = useState(null);
   const [resourceType, setResourceType] = useState("classrooms");
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Form Data States for classrooms and equipment
   const [classroomFormData, setClassroomFormData] = useState({
     name: "",
-    capacity: "",
-    description: "",
-    hasProjector: false,
-    hasWhiteboard: false,
-    hasComputers: false,
-    computerCount: 0,
+    capacity: 1,
   });
 
   const [equipmentFormData, setEquipmentFormData] = useState({
     name: "",
     description: "",
-    lastMaintenance: "",
-    nextMaintenance: "",
+    quantity: 0,
   });
 
-  const baseUrl = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
-
-  // Fetch classrooms and equipment on component mount
   useEffect(() => {
-    Promise.all([
-      axios.get(`${baseUrl}/classrooms`),
-      axios.get(`${baseUrl}/equipment`),
-    ])
-      .then(([classroomsResponse, equipmentResponse]) => {
-        setClassrooms(classroomsResponse.data);
-        setEquipment(equipmentResponse.data);
+    const fetchData = async () => {
+      try {
+        const [classroomsRes, equipmentRes] = await Promise.all([
+          apiClient.get("/classrooms"),
+          apiClient.get("/equipment"),
+        ]);
+
+        setClassrooms(classroomsRes.data);
+        setEquipment(equipmentRes.data);
         setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching resources:", error);
+      } catch (error) {
         setLoading(false);
-      });
+        const errorMessage =
+          error.response?.data?.message || "Failed to fetch data";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Common form change handler
-  const handleFormChange = (e, formType) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e, formType) => {
+    const { name, value } = e.target;
     if (formType === "classroom") {
       setClassroomFormData((prev) => ({
         ...prev,
-        [name]: type === "checkbox" ? checked : value,
+        [name]: name === "capacity" ? parseInt(value) || 0 : value,
       }));
     } else {
       setEquipmentFormData((prev) => ({
         ...prev,
-        [name]: value,
+        [name]: name === "quantity" ? parseInt(value) || 0 : value,
       }));
     }
   };
 
-  // Create Resource
-  const handleCreateResource = (e) => {
+  const handleCreateResource = async (e) => {
     e.preventDefault();
-    const endpoint = resourceType === "classrooms" ? "classrooms" : "equipment";
-    const data =
-      resourceType === "classrooms" ? classroomFormData : equipmentFormData;
+    try {
+      const endpoint =
+        resourceType === "classrooms" ? "/classrooms" : "/equipment";
+      const data =
+        resourceType === "classrooms" ? classroomFormData : equipmentFormData;
 
-    axios
-      .post(`${baseUrl}/${endpoint}`, data)
-      .then((response) => {
-        if (resourceType === "classrooms") {
-          setClassrooms([...classrooms, response.data]);
-        } else {
-          setEquipment([...equipment, response.data]);
-        }
-        resetForm();
-      })
-      .catch((error) => {
-        console.error(`Error creating ${resourceType}:`, error);
-      });
+      const response = await apiClient.post(endpoint, data);
+
+      if (resourceType === "classrooms") {
+        setClassrooms([...classrooms, response.data]);
+      } else {
+        setEquipment([...equipment, response.data]);
+      }
+
+      resetForm();
+      toast.success(
+        `${
+          resourceType === "classrooms" ? "Classroom" : "Equipment"
+        } created successfully`
+      );
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to create ${
+          resourceType === "classrooms" ? "classroom" : "equipment"
+        }`;
+      toast.error(errorMessage);
+    }
   };
 
-  // Edit Resource Setup
-  const handleEditResourceSetup = (resource) => {
-    setSelectedResource(resource);
-    setIsEditMode(true);
-    setShowForm(true);
+  const handleUpdateResource = async (e) => {
+    e.preventDefault();
+    try {
+      const endpoint =
+        resourceType === "classrooms"
+          ? `/classrooms/${selectedResource.id}`
+          : `/equipment/${selectedResource.id}`;
 
+      const data =
+        resourceType === "classrooms" ? classroomFormData : equipmentFormData;
+
+      const response = await apiClient.patch(endpoint, data);
+
+      if (resourceType === "classrooms") {
+        setClassrooms(
+          classrooms.map((c) =>
+            c.id === selectedResource.id ? response.data : c
+          )
+        );
+      } else {
+        setEquipment(
+          equipment.map((e) =>
+            e.id === selectedResource.id ? response.data : e
+          )
+        );
+      }
+
+      resetForm();
+      setSelectedResource(null);
+      toast.success(
+        `${
+          resourceType === "classrooms" ? "Classroom" : "Equipment"
+        } updated successfully`
+      );
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to update ${
+          resourceType === "classrooms" ? "classroom" : "equipment"
+        }`;
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDeleteResource = async (id) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete this ${
+          resourceType === "classrooms" ? "classroom" : "equipment"
+        }?`
+      )
+    )
+      return;
+    try {
+      const endpoint =
+        resourceType === "classrooms"
+          ? `/classrooms/${id}`
+          : `/equipment/${id}`;
+
+      await apiClient.delete(endpoint);
+
+      if (resourceType === "classrooms") {
+        setClassrooms(classrooms.filter((c) => c.id !== id));
+      } else {
+        setEquipment(equipment.filter((e) => e.id !== id));
+      }
+
+      if (selectedResource?.id === id) setSelectedResource(null);
+      toast.success(
+        `${
+          resourceType === "classrooms" ? "Classroom" : "Equipment"
+        } deleted successfully`
+      );
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        `Failed to delete ${
+          resourceType === "classrooms" ? "classroom" : "equipment"
+        }`;
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleEditSetup = (resource) => {
     if (resourceType === "classrooms") {
       setClassroomFormData({
         name: resource.name,
         capacity: resource.capacity,
-        description: resource.description || "",
-        hasProjector: resource.hasProjector,
-        hasWhiteboard: resource.hasWhiteboard,
-        hasComputers: resource.hasComputers,
-        computerCount: resource.computerCount,
       });
     } else {
       setEquipmentFormData({
         name: resource.name,
         description: resource.description,
-        lastMaintenance: resource.lastMaintenance,
-        nextMaintenance: resource.nextMaintenance,
+        quantity: resource.quantity,
       });
     }
+    setSelectedResource(resource);
+    setIsEditMode(true);
+    setShowForm(true);
   };
 
-  // Update Resource
-  const handleUpdateResource = (e) => {
-    e.preventDefault();
-    const endpoint = resourceType === "classrooms" ? "classrooms" : "equipment";
-    const data =
-      resourceType === "classrooms" ? classroomFormData : equipmentFormData;
-
-    axios
-      .put(`${baseUrl}/${endpoint}/${selectedResource.id}`, data)
-      .then(() => {
-        if (resourceType === "classrooms") {
-          const updatedClassrooms = classrooms.map((classroom) =>
-            classroom.id === selectedResource.id
-              ? { ...classroom, ...data }
-              : classroom
-          );
-          setClassrooms(updatedClassrooms);
-        } else {
-          const updatedEquipment = equipment.map((item) =>
-            item.id === selectedResource.id ? { ...item, ...data } : item
-          );
-          setEquipment(updatedEquipment);
-        }
-        resetForm();
-      })
-      .catch((error) => {
-        console.error(`Error updating ${resourceType}:`, error);
-      });
-  };
-
-  // Delete Resource
-  const handleDeleteResource = (id) => {
-    const confirmed = window.confirm(
-      `Are you sure you want to delete this ${
-        resourceType === "classrooms" ? "classroom" : "equipment item"
-      }? This action cannot be undone.`
-    );
-    if (confirmed) {
-      const endpoint =
-        resourceType === "classrooms" ? "classrooms" : "equipment";
-      axios
-        .delete(`${baseUrl}/${endpoint}/${id}`)
-        .then(() => {
-          if (resourceType === "classrooms") {
-            setClassrooms(
-              classrooms.filter((classroom) => classroom.id !== id)
-            );
-          } else {
-            setEquipment(equipment.filter((item) => item.id !== id));
-          }
-          setSelectedResource(null);
-        })
-        .catch((error) => {
-          console.error(`Error deleting ${resourceType}:`, error);
-        });
-    }
-  };
-
-  // Reset Form
   const resetForm = () => {
-    setShowForm(false);
-    setIsEditMode(false);
     setClassroomFormData({
       name: "",
-      capacity: "",
-      description: "",
-      hasProjector: false,
-      hasWhiteboard: false,
-      hasComputers: false,
-      computerCount: 0,
+      capacity: 1,
     });
     setEquipmentFormData({
       name: "",
       description: "",
-      lastMaintenance: "",
-      nextMaintenance: "",
+      quantity: 0,
     });
+    setIsEditMode(false);
+    setShowForm(false);
   };
 
-  // Filtered Resources
-  const filteredResources =
-    resourceType === "classrooms"
-      ? classrooms.filter(
-          (classroom) =>
-            classroom.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (classroom.description &&
-              classroom.description
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()))
-        )
-      : equipment.filter(
-          (item) =>
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (item.description &&
-              item.description
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()))
-        );
+  const filteredResources = (
+    resourceType === "classrooms" ? classrooms : equipment
+  ).filter(
+    (resource) =>
+      resource.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (resource.description &&
+        resource.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  if (user?.role !== 1) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+        <p className="text-red-700">
+          You don't have permission to access this page.
+        </p>
+      </div>
+    );
+  }
 
   if (loading) return <p className="text-center p-4">Loading data...</p>;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
+      <ToastContainer position="top-right" autoClose={5000} />
+
       <header className="bg-blue-700 text-white p-4 shadow rounded-xl">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold">Resource Management</h1>
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto flex flex-col flex-grow p-4">
-        {/* Resource Type Toggle */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
         <div className="flex mb-6 space-x-4">
           <button
             onClick={() => {
@@ -259,9 +281,7 @@ const ResourceManagement = () => {
           </button>
         </div>
 
-        {/* Action Bar */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          {/* Search Bar */}
           <input
             type="text"
             placeholder={`Search ${resourceType}...`}
@@ -270,23 +290,21 @@ const ResourceManagement = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          {/* Action Button */}
           {!showForm && !selectedResource && (
             <button
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               onClick={() => {
-                resetForm(); // Reset first to clear form state
-                setShowForm(true); // Ensure form is visible after reset
+                resetForm();
+                setShowForm(true);
                 setIsEditMode(false);
               }}
             >
-              Create New{" "}
+              + Add New{" "}
               {resourceType === "classrooms" ? "Classroom" : "Equipment"}
             </button>
           )}
         </div>
 
-        {/* Add/Edit Resource Form */}
         {showForm && (
           <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-2 border-blue-700">
             <h3 className="text-xl font-bold mb-4 text-blue-700">
@@ -294,7 +312,7 @@ const ResourceManagement = () => {
                 ? `Edit ${
                     resourceType === "classrooms" ? "Classroom" : "Equipment"
                   }`
-                : `Create New ${
+                : `Add New ${
                     resourceType === "classrooms" ? "Classroom" : "Equipment"
                   }`}
             </h3>
@@ -315,13 +333,12 @@ const ResourceManagement = () => {
                       type="text"
                       name="name"
                       value={classroomFormData.name}
-                      onChange={(e) => handleFormChange(e, "classroom")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                      placeholder="e.g., Lab Room 101"
+                      onChange={(e) => handleInputChange(e, "classroom")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                       required
+                      placeholder="e.g., Computer Lab A"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Capacity
@@ -329,72 +346,12 @@ const ResourceManagement = () => {
                     <input
                       type="number"
                       name="capacity"
+                      min="1"
                       value={classroomFormData.capacity}
-                      onChange={(e) => handleFormChange(e, "classroom")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                      onChange={(e) => handleInputChange(e, "classroom")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                       required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description (Optional)
-                    </label>
-                    <textarea
-                      name="description"
-                      value={classroomFormData.description}
-                      onChange={(e) => handleFormChange(e, "classroom")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                      rows="3"
-                      placeholder="Brief description of the classroom"
-                    ></textarea>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="hasProjector"
-                        checked={classroomFormData.hasProjector}
-                        onChange={(e) => handleFormChange(e, "classroom")}
-                        className="mr-2"
-                      />
-                      Has Projector
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="hasWhiteboard"
-                        checked={classroomFormData.hasWhiteboard}
-                        onChange={(e) => handleFormChange(e, "classroom")}
-                        className="mr-2"
-                      />
-                      Has Whiteboard
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="hasComputers"
-                        checked={classroomFormData.hasComputers}
-                        onChange={(e) => handleFormChange(e, "classroom")}
-                        className="mr-2"
-                      />
-                      Has Computers
-                    </label>
-                    {classroomFormData.hasComputers && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Number of Computers
-                        </label>
-                        <input
-                          type="number"
-                          name="computerCount"
-                          value={classroomFormData.computerCount}
-                          onChange={(e) => handleFormChange(e, "classroom")}
-                          className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                        />
-                      </div>
-                    )}
                   </div>
                 </>
               ) : (
@@ -407,77 +364,62 @@ const ResourceManagement = () => {
                       type="text"
                       name="name"
                       value={equipmentFormData.name}
-                      onChange={(e) => handleFormChange(e, "equipment")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                      placeholder="e.g., Microscope Set"
+                      onChange={(e) => handleInputChange(e, "equipment")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                       required
+                      placeholder="e.g., Projector"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description (Optional)
+                      Description
                     </label>
                     <textarea
                       name="description"
                       value={equipmentFormData.description}
-                      onChange={(e) => handleFormChange(e, "equipment")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                      onChange={(e) => handleInputChange(e, "equipment")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                       rows="3"
-                      placeholder="Brief description of the equipment"
+                      placeholder="Equipment description"
                     ></textarea>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Maintenance
+                      Quantity
                     </label>
                     <input
-                      type="date"
-                      name="lastMaintenance"
-                      value={equipmentFormData.lastMaintenance}
-                      onChange={(e) => handleFormChange(e, "equipment")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Next Maintenance
-                    </label>
-                    <input
-                      type="date"
-                      name="nextMaintenance"
-                      value={equipmentFormData.nextMaintenance}
-                      onChange={(e) => handleFormChange(e, "equipment")}
-                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                      type="number"
+                      name="quantity"
+                      min="0"
+                      value={equipmentFormData.quantity}
+                      onChange={(e) => handleInputChange(e, "equipment")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                      required
                     />
                   </div>
                 </>
               )}
 
-              <div className="flex justify-end space-x-2 mt-6">
+              <div className="flex justify-end gap-4 mt-6">
                 <button
                   type="button"
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                   onClick={resetForm}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
                 >
-                  {isEditMode ? "Save Changes" : "Create"}
+                  {isEditMode ? "Save Changes" : "Add"}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Conditional Rendering: Resource List / Resource Detail */}
         {!selectedResource && !showForm ? (
-          // Resources Grid
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredResources.length === 0 ? (
               <div className="bg-white p-6 rounded-lg shadow text-center">
@@ -491,61 +433,36 @@ const ResourceManagement = () => {
                   key={resource.id}
                   className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
                 >
-                  <div className="flex justify-between items-start">
-                    <h3
-                      className="text-lg font-semibold text-blue-700 cursor-pointer"
-                      onClick={() => setSelectedResource(resource)}
-                    >
-                      {resource.name}
-                    </h3>
-                  </div>
-
-                  {resourceType === "classrooms" && (
-                    <>
-                      <p className="text-gray-700 mt-2">
-                        <span className="font-semibold">Capacity:</span>{" "}
-                        {resource.capacity}
-                      </p>
-                      <div className="text-gray-700 mt-1">
-                        {resource.hasProjector && <span>📽️ Projector | </span>}
-                        {resource.hasWhiteboard && (
-                          <span>📋 Whiteboard | </span>
-                        )}
-                        {resource.hasComputers && (
-                          <span>💻 {resource.computerCount} Computers</span>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {resourceType === "equipment" && (
-                    <>
-                      <p className="text-gray-700 mt-2">
-                        <span className="font-semibold">Last Maintenance:</span>{" "}
-                        {resource.lastMaintenance}
-                      </p>
-                      <p className="text-gray-700">
-                        <span className="font-semibold">Next Maintenance:</span>{" "}
-                        {resource.nextMaintenance}
-                      </p>
-                    </>
-                  )}
-
-                  {resource.description && (
-                    <p className="text-gray-600 mt-2 text-sm line-clamp-2">
-                      {resource.description}
+                  <h3
+                    className="text-lg font-semibold text-blue-700 cursor-pointer"
+                    onClick={() => setSelectedResource(resource)}
+                  >
+                    {resource.name}
+                  </h3>
+                  {resourceType === "classrooms" ? (
+                    <p className="text-gray-700 mt-2">
+                      <span className="font-semibold">Capacity:</span>{" "}
+                      {resource.capacity}
                     </p>
+                  ) : (
+                    <>
+                      <p className="text-gray-700 mt-2">
+                        <span className="font-semibold">Quantity:</span>{" "}
+                        {resource.quantity}
+                      </p>
+                      {resource.description && (
+                        <p className="text-gray-600 mt-2 text-sm line-clamp-2">
+                          {resource.description}
+                        </p>
+                      )}
+                    </>
                   )}
-
                   <div className="mt-3">
                     <button
                       onClick={() => setSelectedResource(resource)}
                       className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                     >
-                      Manage{" "}
-                      {resourceType === "classrooms"
-                        ? "Classroom"
-                        : "Equipment"}
+                      Manage
                     </button>
                   </div>
                 </div>
@@ -553,7 +470,6 @@ const ResourceManagement = () => {
             )}
           </div>
         ) : selectedResource && !showForm ? (
-          // Resource Detail View
           <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-2xl font-bold text-blue-700">
@@ -574,54 +490,56 @@ const ResourceManagement = () => {
                     <span className="font-semibold">Capacity:</span>{" "}
                     {selectedResource.capacity}
                   </p>
-                  <div>
-                    <span className="font-semibold">Facilities:</span>{" "}
-                    {selectedResource.hasProjector && "📽️ Projector | "}
-                    {selectedResource.hasWhiteboard && "📋 Whiteboard | "}
-                    {selectedResource.hasComputers &&
-                      `💻 ${selectedResource.computerCount} Computers`}
-                  </div>
+                  <p>
+                    <span className="font-semibold">Created:</span>{" "}
+                    {new Date(selectedResource.createdAt).toLocaleDateString()}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Last Updated:</span>{" "}
+                    {new Date(selectedResource.updatedAt).toLocaleDateString()}
+                  </p>
                 </>
               ) : (
                 <>
                   <p>
-                    <span className="font-semibold">Last Maintenance:</span>{" "}
-                    {selectedResource.lastMaintenance}
+                    <span className="font-semibold">Quantity:</span>{" "}
+                    {selectedResource.quantity}
+                  </p>
+                  {selectedResource.description && (
+                    <p>
+                      <span className="font-semibold">Description:</span>{" "}
+                      {selectedResource.description}
+                    </p>
+                  )}
+                  <p>
+                    <span className="font-semibold">Created:</span>{" "}
+                    {new Date(selectedResource.createdAt).toLocaleDateString()}
                   </p>
                   <p>
-                    <span className="font-semibold">Next Maintenance:</span>{" "}
-                    {selectedResource.nextMaintenance}
+                    <span className="font-semibold">Last Updated:</span>{" "}
+                    {new Date(selectedResource.updatedAt).toLocaleDateString()}
                   </p>
                 </>
-              )}
-
-              {selectedResource.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">Description:</h3>
-                  <p className="text-gray-700">
-                    {selectedResource.description}
-                  </p>
-                </div>
               )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
                 onClick={() => setSelectedResource(null)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
               >
                 Back to{" "}
                 {resourceType === "classrooms" ? "Classrooms" : "Equipment"}
               </button>
               <button
+                onClick={() => handleEditSetup(selectedResource)}
                 className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
-                onClick={() => handleEditResourceSetup(selectedResource)}
               >
                 Edit
               </button>
               <button
-                className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800"
                 onClick={() => handleDeleteResource(selectedResource.id)}
+                className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800"
               >
                 Delete
               </button>

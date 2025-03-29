@@ -4,55 +4,38 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiClient from "../../api/apiClient";
 
-const COURSE_CATEGORIES = {
-  1: "IT",
-  2: "Business",
-  3: "Engineering",
-  4: "Arts",
-  5: "Science",
-};
-
-const COURSE_LEVELS = {
-  1: "Diploma",
-  2: "Bachelor",
-  3: "Master",
-  4: "PhD",
-};
-
-const CourseManagement = () => {
+const ModuleManagement = () => {
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
-  const [departments, setDepartments] = useState([]);
   const [modules, setModules] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [lecturers, setLecturers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [filterCourse, setFilterCourse] = useState("all");
+  const [selectedModule, setSelectedModule] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  const [courseFormData, setCourseFormData] = useState({
+  const [moduleFormData, setModuleFormData] = useState({
     title: "",
     description: "",
-    category: 1,
-    level: 1,
-    departmentId: "",
-    moduleIds: [],
+    courseIds: [],
+    lecturerIds: [],
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [coursesRes, departmentsRes, modulesRes] = await Promise.all([
-          apiClient.get("/courses"),
-          apiClient.get("/departments"),
+        const [modulesRes, coursesRes, lecturersRes] = await Promise.all([
           apiClient.get("/modules"),
+          apiClient.get("/courses"),
+          apiClient.get("/users?role=3"), // Get only lecturers (role=3)
         ]);
 
-        setCourses(coursesRes.data);
-        setDepartments(departmentsRes.data);
         setModules(modulesRes.data);
+        setCourses(coursesRes.data);
+        setLecturers(lecturersRes.data);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -68,110 +51,112 @@ const CourseManagement = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCourseFormData((prev) => ({
+    setModuleFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleModuleSelection = (e) => {
-    const options = Array.from(
-      e.target.selectedOptions,
-      (option) => option.value
-    );
-    setCourseFormData((prev) => ({
+  const handleMultiSelectChange = (e) => {
+    const { name, options } = e.target;
+    const selectedValues = Array.from(options)
+      .filter((option) => option.selected)
+      .map((option) => option.value);
+
+    setModuleFormData((prev) => ({
       ...prev,
-      moduleIds: options,
+      [name]: selectedValues,
     }));
   };
 
-  const handleCreateCourse = async (e) => {
+  const handleCreateModule = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiClient.post("/courses", courseFormData);
-      setCourses([...courses, response.data]);
+      const response = await apiClient.post("/modules", moduleFormData);
+      setModules([...modules, response.data]);
       resetForm();
-      toast.success(`Course ${courseFormData.title} created successfully`);
+      toast.success(`Module ${moduleFormData.title} created successfully`);
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Failed to create course";
+        error.response?.data?.message || "Failed to create module";
       toast.error(errorMessage);
     }
   };
 
-  const handleUpdateCourse = async (e) => {
+  const handleUpdateModule = async (e) => {
     e.preventDefault();
     try {
       const response = await apiClient.patch(
-        `/courses/${selectedCourse.id}`,
-        courseFormData
+        `/modules/${selectedModule.id}`,
+        moduleFormData
       );
 
-      const updatedCourses = courses.map((course) =>
-        course.id === selectedCourse.id ? response.data : course
+      const updatedModules = modules.map((module) =>
+        module.id === selectedModule.id ? response.data : module
       );
 
-      setCourses(updatedCourses);
+      setModules(updatedModules);
       resetForm();
-      setSelectedCourse(null);
-      toast.success(`Course ${courseFormData.title} updated successfully`);
+      setSelectedModule(null);
+      toast.success(`Module ${moduleFormData.title} updated successfully`);
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Failed to update course";
+        error.response?.data?.message || "Failed to update module";
       toast.error(errorMessage);
     }
   };
 
-  const handleDeleteCourse = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
+  const handleDeleteModule = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this module?")) return;
     try {
-      await apiClient.delete(`/courses/${id}`);
-      setCourses(courses.filter((course) => course.id !== id));
-      if (selectedCourse?.id === id) setSelectedCourse(null);
-      toast.success("Course deleted successfully");
+      await apiClient.delete(`/modules/${id}`);
+      setModules(modules.filter((module) => module.id !== id));
+      if (selectedModule?.id === id) setSelectedModule(null);
+      toast.success("Module deleted successfully");
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Failed to delete course";
+        error.response?.data?.message || "Failed to delete module";
       toast.error(errorMessage);
     }
   };
 
   const resetForm = () => {
-    setCourseFormData({
+    setModuleFormData({
       title: "",
       description: "",
-      category: 1,
-      level: 1,
-      departmentId: "",
-      moduleIds: [],
+      courseIds: [],
+      lecturerIds: [],
     });
     setIsEditMode(false);
     setShowForm(false);
   };
 
-  const handleEditSetup = (course) => {
-    setCourseFormData({
-      title: course.title,
-      description: course.description,
-      category: course.category,
-      level: course.level,
-      departmentId: course.departmentId,
-      moduleIds: course.modules?.map((m) => m.id) || [],
+  const handleEditSetup = (module) => {
+    setModuleFormData({
+      title: module.title,
+      description: module.description,
+      courseIds: module.courses?.map((c) => c.id) || [],
+      lecturerIds: module.lecturers?.map((l) => l.id) || [],
     });
-    setSelectedCourse(course);
+    setSelectedModule(module);
     setIsEditMode(true);
     setShowForm(true);
   };
 
-  const filteredCourses = courses.filter((course) => {
+  const filteredModules = modules.filter((module) => {
     const matchesSearch =
-      course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (course.description &&
-        course.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory =
-      filterCategory === "all" || course.category.toString() === filterCategory;
-    return matchesSearch && matchesCategory;
+      module.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (module.description &&
+        module.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesCourse =
+      filterCourse === "all" ||
+      module.courses?.some((course) => course.id.toString() === filterCourse);
+    return matchesSearch && matchesCourse;
   });
+
+  const getLecturerName = (lecturer) => {
+    return `${lecturer.firstName} ${lecturer.lastName}`;
+  };
 
   if (user?.role !== 1) {
     return (
@@ -183,7 +168,7 @@ const CourseManagement = () => {
     );
   }
 
-  if (loading) return <p className="text-center p-4">Loading courses...</p>;
+  if (loading) return <p className="text-center p-4">Loading modules...</p>;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -191,7 +176,7 @@ const CourseManagement = () => {
 
       <header className="bg-blue-700 text-white p-4 shadow rounded-xl">
         <div className="container mx-auto">
-          <h1 className="text-2xl font-bold">Course Management</h1>
+          <h1 className="text-2xl font-bold">Module Management</h1>
         </div>
       </header>
 
@@ -202,26 +187,26 @@ const CourseManagement = () => {
           </div>
         )}
 
-        {!selectedCourse && !showForm && (
+        {!selectedModule && !showForm && (
           <>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <input
                 type="text"
-                placeholder="Search courses..."
+                placeholder="Search modules..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full sm:w-1/2 p-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
               />
               <div className="flex gap-4">
                 <select
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
+                  value={filterCourse}
+                  onChange={(e) => setFilterCourse(e.target.value)}
                   className="px-3 py-2 border rounded-lg focus:border-blue-700 focus:outline-none"
                 >
-                  <option value="all">All Categories</option>
-                  {Object.entries(COURSE_CATEGORIES).map(([id, name]) => (
-                    <option key={id} value={id}>
-                      {name}
+                  <option value="all">All Courses</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title}
                     </option>
                   ))}
                 </select>
@@ -233,46 +218,48 @@ const CourseManagement = () => {
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  + Add New Course
+                  + Add New Module
                 </button>
               </div>
             </div>
 
-            {filteredCourses.length === 0 ? (
+            {filteredModules.length === 0 ? (
               <p className="text-center text-gray-500">
-                No courses found matching your criteria.
+                No modules found matching your criteria.
               </p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredCourses.map((course) => (
+                {filteredModules.map((module) => (
                   <div
-                    key={course.id}
+                    key={module.id}
                     className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
                   >
                     <h3
                       className="text-lg font-semibold text-blue-700 cursor-pointer"
-                      onClick={() => setSelectedCourse(course)}
+                      onClick={() => setSelectedModule(module)}
                     >
-                      {course.title}
+                      {module.title}
                     </h3>
                     <p className="text-gray-700 mt-2">
-                      <span className="font-semibold">Category:</span>{" "}
-                      {COURSE_CATEGORIES[course.category] || "Unknown"}
+                      <span className="font-semibold">Courses:</span>{" "}
+                      {module.courses?.length > 0
+                        ? module.courses.map((c) => c.title).join(", ")
+                        : "Not assigned"}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-semibold">Level:</span>{" "}
-                      {COURSE_LEVELS[course.level] || "Unknown"}
-                    </p>
-                    <p className="text-gray-700">
-                      <span className="font-semibold">Department:</span>{" "}
-                      {course.department?.name || "Unknown"}
+                      <span className="font-semibold">Lecturers:</span>{" "}
+                      {module.lecturers?.length > 0
+                        ? module.lecturers
+                            .map((l) => getLecturerName(l))
+                            .join(", ")
+                        : "Not assigned"}
                     </p>
                     <div className="mt-3">
                       <button
-                        onClick={() => setSelectedCourse(course)}
+                        onClick={() => setSelectedModule(module)}
                         className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                       >
-                        Manage Course
+                        Manage Module
                       </button>
                     </div>
                   </div>
@@ -285,10 +272,10 @@ const CourseManagement = () => {
         {showForm && (
           <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-2 border-blue-700">
             <h3 className="text-xl font-bold mb-4 text-blue-700">
-              {isEditMode ? "Edit Course" : "Add New Course"}
+              {isEditMode ? "Edit Module" : "Add New Module"}
             </h3>
             <form
-              onSubmit={isEditMode ? handleUpdateCourse : handleCreateCourse}
+              onSubmit={isEditMode ? handleUpdateModule : handleCreateModule}
               className="space-y-4"
             >
               <div>
@@ -298,11 +285,11 @@ const CourseManagement = () => {
                 <input
                   type="text"
                   name="title"
-                  value={courseFormData.title}
+                  value={moduleFormData.title}
                   onChange={handleInputChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  placeholder="Course title"
+                  placeholder="Module title"
                 />
               </div>
               <div>
@@ -311,82 +298,49 @@ const CourseManagement = () => {
                 </label>
                 <textarea
                   name="description"
-                  value={courseFormData.description}
+                  value={moduleFormData.description}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                   rows="3"
-                  placeholder="Course description"
+                  placeholder="Module description"
                 ></textarea>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    name="category"
-                    value={courseFormData.category}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  >
-                    {Object.entries(COURSE_CATEGORIES).map(([id, name]) => (
-                      <option key={id} value={id}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Level
-                  </label>
-                  <select
-                    name="level"
-                    value={courseFormData.level}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  >
-                    {Object.entries(COURSE_LEVELS).map(([id, name]) => (
-                      <option key={id} value={id}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <select
-                    name="departmentId"
-                    value={courseFormData.departmentId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                  >
-                    <option value="">Select department</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Modules
+                  Associated Courses
                 </label>
                 <select
                   multiple
-                  value={courseFormData.moduleIds}
-                  onChange={handleModuleSelection}
+                  name="courseIds"
+                  value={moduleFormData.courseIds}
+                  onChange={handleMultiSelectChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none h-32"
                 >
-                  {modules.map((module) => (
-                    <option key={module.id} value={module.id}>
-                      {module.title}
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Hold Ctrl/Cmd to select multiple
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assigned Lecturers
+                </label>
+                <select
+                  multiple
+                  name="lecturerIds"
+                  value={moduleFormData.lecturerIds}
+                  onChange={handleMultiSelectChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none h-32"
+                >
+                  {lecturers.map((lecturer) => (
+                    <option key={lecturer.id} value={lecturer.id}>
+                      {getLecturerName(lecturer)} (
+                      {lecturer.department?.name || "Unknown"})
                     </option>
                   ))}
                 </select>
@@ -406,21 +360,21 @@ const CourseManagement = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
                 >
-                  {isEditMode ? "Update Course" : "Add Course"}
+                  {isEditMode ? "Update Module" : "Add Module"}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {selectedCourse && !showForm && (
+        {selectedModule && !showForm && (
           <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
             <div className="flex justify-between items-start mb-4">
               <h2 className="text-2xl font-bold text-blue-700">
-                {selectedCourse.title}
+                {selectedModule.title}
               </h2>
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={() => setSelectedModule(null)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 &times;
@@ -429,30 +383,12 @@ const CourseManagement = () => {
             <div className="space-y-4">
               <p>
                 <span className="font-semibold">Description:</span>{" "}
-                {selectedCourse.description || "No description available"}
+                {selectedModule.description || "No description available"}
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p>
-                    <span className="font-semibold">Category:</span>{" "}
-                    {COURSE_CATEGORIES[selectedCourse.category] || "Unknown"}
-                  </p>
-                  <p>
-                    <span className="font-semibold">Level:</span>{" "}
-                    {COURSE_LEVELS[selectedCourse.level] || "Unknown"}
-                  </p>
-                </div>
-                <div>
-                  <p>
-                    <span className="font-semibold">Department:</span>{" "}
-                    {selectedCourse.department?.name || "Unknown"}
-                  </p>
-                </div>
-              </div>
 
               <div>
-                <h3 className="font-semibold mb-2">Modules</h3>
-                {selectedCourse.modules?.length > 0 ? (
+                <h3 className="font-semibold mb-2">Courses</h3>
+                {selectedModule.courses?.length > 0 ? (
                   <div className="border rounded-lg overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
@@ -461,18 +397,18 @@ const CourseManagement = () => {
                             Title
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Description
+                            Category
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedCourse.modules.map((module) => (
-                          <tr key={module.id} className="hover:bg-gray-50">
+                        {selectedModule.courses.map((course) => (
+                          <tr key={course.id} className="hover:bg-gray-50">
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                              {module.title}
+                              {course.title}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {module.description || "No description"}
+                              {course.categoryName}
                             </td>
                           </tr>
                         ))}
@@ -481,29 +417,65 @@ const CourseManagement = () => {
                   </div>
                 ) : (
                   <p className="text-gray-500">
-                    No modules assigned to this course
+                    No courses assigned to this module
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Lecturers</h3>
+                {selectedModule.lecturers?.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                            Name
+                          </th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                            Department
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedModule.lecturers.map((lecturer) => (
+                          <tr key={lecturer.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                              {getLecturerName(lecturer)}
+                            </td>
+                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
+                              {lecturer.department?.name || "Unknown"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">
+                    No lecturers assigned to this module
                   </p>
                 )}
               </div>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setSelectedCourse(null)}
+                onClick={() => setSelectedModule(null)}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
               >
-                Back to Courses
+                Back to Modules
               </button>
               <button
-                onClick={() => handleEditSetup(selectedCourse)}
+                onClick={() => handleEditSetup(selectedModule)}
                 className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
               >
-                Edit Course
+                Edit Module
               </button>
               <button
-                onClick={() => handleDeleteCourse(selectedCourse.id)}
+                onClick={() => handleDeleteModule(selectedModule.id)}
                 className="px-4 py-2 bg-red-700 text-white rounded hover:bg-red-800"
               >
-                Delete Course
+                Delete Module
               </button>
             </div>
           </div>
@@ -513,4 +485,4 @@ const CourseManagement = () => {
   );
 };
 
-export default CourseManagement;
+export default ModuleManagement;

@@ -3,3 +3,4 @@ back-end/ashbourne-scms-firebase-svc-acc-creds.json
 front-end/src/pages/MEOW.JSX
 front-end/.env
 .gitignore
+front-end/src/pages/admin/ada.jsx

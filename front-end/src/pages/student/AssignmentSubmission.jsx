@@ -1,6 +1,27 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import axios from "axios";
+
+const baseUrl = import.meta.env.VITE_BASE_URL;
+
+const ROLE_MAPPING = {
+  admin: 1,
+  coordinator: 2,
+  lecturer: 3,
+  student: 4,
+};
+
+const REVERSE_ROLE_MAPPING = {
+  1: "admin",
+  2: "coordinator",
+  3: "lecturer",
+  4: "student",
+};
 
 const AssignmentSubmission = () => {
+  const { user, token } = useAuth();
+  console.log(user);
+  console.log(token);
   const [assignments, setAssignments] = useState([
     {
       id: 1,
