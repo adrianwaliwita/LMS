@@ -22,33 +22,33 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     1: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Users", path: "/manage-users" }, //done
-      //leturer subjects has to be assigned to the lecturers
+      //leturer modules has to be assigned to the lecturers
 
       { name: "Manage Batches", path: "/manage-batches" }, //done
       { name: "Manage Courses", path: "/manage-courses" }, //admin can make and manage Courses
 
       { name: "Manage Resources", path: "/manage-resources" }, //can create resources and classrooms
-      { name: "Manage Subjects", path: "/manage-subjects" }, //can create resources and classrooms
+      { name: "Manage Modules", path: "/manage-modules" }, //can create resources and classrooms
 
       { name: "Profile Settings", path: `/profile` },
     ],
 
     3: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to subjects from students all documents are uploaded from the coordinator
+      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
       { name: "Profile Settings", path: `/profile` },
     ],
 
     2: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage Subjects", path: "/manage-subjects" },
+      { name: "Manage Modules", path: "/manage-modules" },
       { name: "Manage Students", path: "/manage-students" }, //done
 
       { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
       {
         name: "Manage Lecture Scheduling & Resources",
         path: "/manage-lectures",
-      }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the subject, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
+      }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the module, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
       { name: "Manage Announcements", path: "/manage-announcements" },
 
       { name: "Profile Settings", path: `/profile` },
@@ -56,7 +56,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     4: [
       { name: "Home", path: "/dashboard" },
-      { name: "My Subjects", path: "/subjects" }, //show schedules of the student
+      { name: "My Modules", path: "/modules" }, //show schedules of the student
       { name: "Submit Assignments", path: "/assignment" },
       { name: "Profile Settings", path: `/profile` },
     ],

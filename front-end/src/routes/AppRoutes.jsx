@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
-import Subjects from "../pages/student/Subjects";
+import Modules from "../pages/student/Modules";
 import Profile from "../pages/Profile";
 import AssignmentSubmission from "../pages/student/AssignmentSubmission";
 import Layout from "../layout/Layout";
@@ -10,8 +10,7 @@ import ManageUsers from "../pages/admin/ManageUsers";
 import ManageResources from "../pages/admin/ManageResources";
 import ManageBatches from "../pages/admin/ManageBatches";
 import ManageCourses from "../pages/admin/ManageCourses";
-import ManageLectures from "../pages/admin/ManageLectures";
-import ManageSubjects from "../pages/admin/ManageSubjects";
+import ManageModules from "../pages/admin/ManageModules";
 
 import ManageStudents from "../pages/coordinator/ManageStudents";
 import ManageAnnouncements from "../pages/coordinator/ManageAnnouncements";
@@ -20,13 +19,12 @@ const AppRoutes = () => {
     <Router>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/subjects" element={<Subjects />} />
+          <Route path="/modules" element={<Modules />} />
           <Route path="/manage-batches" element={<ManageBatches />} />
           <Route path="/manage-courses" element={<ManageCourses />} />
           <Route path="/manage-resources" element={<ManageResources />} />
-          <Route path="/manage-Lectures" element={<ManageLectures />} />
           <Route path="/manage-users" element={<ManageUsers />} />
-          <Route path="/manage-subjects" element={<ManageSubjects />} />
+          <Route path="/manage-modules" element={<ManageModules />} />
           <Route path="/assignment" element={<AssignmentSubmission />} />
 
           <Route path="/manage-students" element={<ManageStudents />} />

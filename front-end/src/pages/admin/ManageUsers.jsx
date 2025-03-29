@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import apiClient from "../../api/apiClient";
 
-const baseUrl = import.meta.env.VITE_BASE_URL;
-
-// Role mapping between frontend and backend
 const ROLE_MAPPING = {
   admin: 1,
   coordinator: 2,
@@ -21,13 +20,11 @@ const REVERSE_ROLE_MAPPING = {
 
 const UserManagement = () => {
   const { user, token } = useAuth();
-
-  // Data States
   const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // UI & Form States
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
@@ -39,40 +36,41 @@ const UserManagement = () => {
     email: "",
     role: "admin",
     password: "",
+    departmentId: "",
+    batchId: "",
   });
 
-  // Fetch users on mount
+  console.log(token);
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usersRes = await axios.get(`${baseUrl}/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [usersRes, departmentsRes, batchesRes] = await Promise.all([
+          apiClient.get("/users"),
+          apiClient.get("/departments"),
+          apiClient.get("/batches"),
+        ]);
+
         setUsers(usersRes.data);
+        setDepartments(departmentsRes.data);
+        setBatches(batchesRes.data);
         setLoading(false);
-        setError(null);
       } catch (error) {
         setLoading(false);
-        setError(
-          error.response?.data?.message ||
-            "Failed to fetch users. Please try again."
-        );
+        const errorMessage =
+          error.response?.data?.message || "Failed to fetch data";
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     };
 
     fetchData();
-  }, [token]);
+  }, []);
 
-  // Form event handlers
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setUserFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Add a new user
   const handleAddUser = async (e) => {
     e.preventDefault();
     try {
@@ -82,27 +80,37 @@ const UserManagement = () => {
         email: userFormData.email,
         role: ROLE_MAPPING[userFormData.role],
         password: userFormData.password,
+        departmentId: userFormData.departmentId,
+        ...(userFormData.role === "student" && {
+          enrolledBatchId: userFormData.batchId,
+        }),
       };
 
-      const res = await axios.post(`${baseUrl}/users`, newUser, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setUsers([...users, res.data]);
+      const response = await apiClient.post("/users", newUser);
+
+      // Attach full department and batch objects
+      const createdUser = {
+        ...response.data,
+        department: departments.find(
+          (d) => d.id === parseInt(userFormData.departmentId)
+        ),
+        ...(userFormData.role === "student" && {
+          enrolledBatch: batches.find(
+            (b) => b.id === parseInt(userFormData.batchId)
+          ),
+        }),
+      };
+
+      setUsers([...users, createdUser]);
       resetForm();
-      setError(null);
+      toast.success(`User ${newUser.firstName} ${newUser.lastName} created`);
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to add user. Please check your inputs and try again."
-      );
+      const errorMessage =
+        error.response?.data?.message || "Failed to add user";
+      toast.error(errorMessage);
     }
   };
 
-  // Update an existing user
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
@@ -111,60 +119,60 @@ const UserManagement = () => {
         lastName: userFormData.lastName,
         email: userFormData.email,
         role: ROLE_MAPPING[userFormData.role],
+        departmentId: userFormData.departmentId,
+        ...(userFormData.role === "student" && {
+          batchId: userFormData.batchId,
+        }),
       };
 
-      // Only include password if it's not empty
-      if (userFormData.password) {
-        updatedUser.password = userFormData.password;
-      }
+      if (userFormData.password) updatedUser.password = userFormData.password;
 
-      await axios.put(`${baseUrl}/users/${selectedUser._id}`, updatedUser, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiClient.patch(
+        `/users/${selectedUser.id}`,
+        updatedUser
+      );
+
+      const updatedUserData = {
+        ...selectedUser,
+        ...updatedUser,
+        department: departments.find(
+          (d) => d.id === parseInt(userFormData.departmentId)
+        ),
+        enrolledBatch:
+          userFormData.role === "student"
+            ? batches.find((b) => b.id === parseInt(userFormData.batchId))
+            : null,
+      };
+
       setUsers(
-        users.map((u) =>
-          u._id === selectedUser._id ? { ...u, ...updatedUser } : u
-        )
+        users.map((u) => (u.id === selectedUser.id ? updatedUserData : u))
       );
       resetForm();
       setSelectedUser(null);
-      setError(null);
-    } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to update user. Please try again."
+      toast.success(
+        `User ${updatedUser.firstName} ${updatedUser.lastName} updated`
       );
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to update user";
+      toast.error(errorMessage);
     }
   };
 
-  // Delete a user
-  // Delete a user
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await axios.delete(`${baseUrl}/users/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await apiClient.delete(`/users/${id}`);
       setUsers(users.filter((u) => u.id !== id));
-      if (selectedUser && selectedUser.id === id) {
-        setSelectedUser(null);
-      }
-      setError(null);
+      if (selectedUser?.id === id) setSelectedUser(null);
+      toast.success("User deleted successfully");
     } catch (error) {
-      setError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to delete user. Please try again."
-      );
+      const errorMessage =
+        error.response?.data?.message || "Failed to delete user";
+      toast.error(errorMessage);
     }
   };
 
-  // Reset the user form
   const resetForm = () => {
     setUserFormData({
       firstName: "",
@@ -172,18 +180,15 @@ const UserManagement = () => {
       email: "",
       role: "admin",
       password: "",
+      departmentId: "",
+      batchId: "",
     });
     setIsEditMode(false);
     setShowForm(false);
-    setError(null);
   };
 
-  // Get full name from first and last name
-  const getFullName = (user) => {
-    return `${user.firstName} ${user.lastName}`;
-  };
+  const getFullName = (user) => `${user.firstName} ${user.lastName}`;
 
-  // Filter users based on search and role
   const filteredUsers = users.filter((u) => {
     const fullName = getFullName(u).toLowerCase();
     const matchesSearch =
@@ -194,12 +199,11 @@ const UserManagement = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Redirect non-admin users
   if (user?.role !== 1) {
     return (
       <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
         <p className="text-red-700">
-          You do not have permission to access this page.
+          You don't have permission to access this page.
         </p>
       </div>
     );
@@ -209,26 +213,23 @@ const UserManagement = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
+      <ToastContainer position="top-right" autoClose={5000} />
+
       <header className="bg-blue-700 text-white p-4 shadow rounded-xl">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold">User Management</h1>
         </div>
       </header>
 
-      {/* Main Content */}
       <div className="container mx-auto p-4 flex-grow">
-        {/* Error Display */}
         {error && (
           <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500">
             <p className="text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Only show filters and grid when no user is selected and no form is active */}
         {!selectedUser && !showForm && (
           <>
-            {/* Action Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
               <input
                 type="text"
@@ -262,7 +263,6 @@ const UserManagement = () => {
               </div>
             </div>
 
-            {/* Users Grid */}
             {filteredUsers.length === 0 ? (
               <p className="text-center text-gray-500">
                 No users found matching your criteria.
@@ -271,7 +271,7 @@ const UserManagement = () => {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredUsers.map((u) => (
                   <div
-                    key={u._id}
+                    key={u.id}
                     className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
                   >
                     <h3
@@ -288,7 +288,16 @@ const UserManagement = () => {
                       {REVERSE_ROLE_MAPPING[u.role]?.charAt(0).toUpperCase() +
                         REVERSE_ROLE_MAPPING[u.role]?.slice(1) || "Unknown"}
                     </p>
-
+                    <p className="text-gray-700">
+                      <span className="font-semibold">Department:</span>{" "}
+                      {u.department?.name || "Unknown"}
+                    </p>
+                    {u.role === ROLE_MAPPING.student && u.enrolledBatch && (
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Batch:</span>{" "}
+                        {u.enrolledBatch.name}
+                      </p>
+                    )}
                     <div className="mt-3">
                       <button
                         onClick={() => setSelectedUser(u)}
@@ -303,7 +312,6 @@ const UserManagement = () => {
             )}
           </>
         )}
-
         {/* User Add/Edit Form */}
         {showForm && (
           <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-2 border-blue-700">
@@ -396,6 +404,45 @@ const UserManagement = () => {
                   <option value="student">Student</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
+                <select
+                  name="departmentId"
+                  value={userFormData.departmentId}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                >
+                  <option value="">Select a department</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {userFormData.role === "student" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Batch
+                  </label>
+                  <select
+                    name="batchId"
+                    value={userFormData.batchId}
+                    onChange={handleInputChange}
+                    required={userFormData.role === "student"}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                  >
+                    <option value="">Select a batch</option>
+                    {batches.map((batch) => (
+                      <option key={batch.id} value={batch.id}>
+                        {batch.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="flex justify-end gap-4 mt-6">
                 <button
@@ -443,6 +490,20 @@ const UserManagement = () => {
                   REVERSE_ROLE_MAPPING[selectedUser.role]?.slice(1) ||
                   "Unknown"}
               </p>
+              <p>
+                <span className="font-semibold">Department: </span>
+                {selectedUser.department?.name ||
+                  departments.find((d) => d.id === selectedUser.departmentId)
+                    ?.name ||
+                  "Unknown"}
+              </p>
+              {selectedUser.role === ROLE_MAPPING.student &&
+                selectedUser.enrolledBatch && (
+                  <p>
+                    <span className="font-semibold">Batch:</span>{" "}
+                    {selectedUser.enrolledBatch.name || "Unknown"}
+                  </p>
+                )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
@@ -460,6 +521,8 @@ const UserManagement = () => {
                     email: selectedUser.email,
                     role: REVERSE_ROLE_MAPPING[selectedUser.role] || "admin",
                     password: "",
+                    departmentId: selectedUser.departmentId || "",
+                    batchId: selectedUser.enrolledBatch?.id || "",
                   });
                   setIsEditMode(true);
                   setShowForm(true);

@@ -1,370 +1,488 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "./../context/AuthContext";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import apiClient from "./../api/apiClient";
 
-const ProfileSettings = () => {
-  const { user } = useAuth();
-
+const Profile = () => {
+  const { user, updateUser } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("general");
-  const [profileImage, setProfileImage] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
 
-  // Default user profile structure
-  const defaultProfile = {
-    name: "",
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
     email: "",
-    role: "",
-    department: "Computer Science",
-    joinDate: "2022-09-01",
-    profileImage: null,
-    preferences: {
-      emailNotifications: true,
-      language: "English",
-    },
-  };
+    role: 0,
+    roleName: "",
+    departmentId: 0,
+    department: {},
+    enrolledBatch: null,
+    assignedModules: [],
+    createdAt: "",
+    updatedAt: "",
+  });
 
-  // Sample data for different roles
-  const roleProfiles = {
-    admin: {
-      name: "Admin User",
-      department: "Administration",
-      joinDate: "2020-01-15",
-    },
-    lecturer: {
-      name: "Professor Smith",
-      department: "Computer Science",
-      joinDate: "2019-08-20",
-    },
-    student: {
-      name: "Alex Johnson",
-      department: "Computer Science",
-      joinDate: "2022-09-01",
-    },
-    coordinator: {
-      name: "Sam Wilson",
-      department: "Event Management",
-      joinDate: "2021-03-10",
-    },
-  };
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
-  const [formData, setFormData] = useState({ ...defaultProfile });
-
-  // Update form data when user changes
   useEffect(() => {
-    if (user && user.role) {
-      const roleSpecificData = roleProfiles[user.role] || {};
-      setFormData({
-        ...defaultProfile,
-        ...roleSpecificData,
-        email: user.email || "",
-        role: user.role || "",
-      });
-    }
+    const fetchProfileData = async () => {
+      try {
+        if (user) {
+          const response = await apiClient.get(`/users/${user.id}`);
+          const userData = response.data;
+          setFormData({
+            firstName: userData.firstName || "",
+            lastName: userData.lastName || "",
+            email: userData.email || "",
+            role: userData.role || 0,
+            roleName: userData.roleName || "",
+            departmentId: userData.departmentId || 0,
+            department: userData.department || {},
+            enrolledBatch: userData.enrolledBatch || null,
+            assignedModules: userData.assignedModules || [],
+            createdAt: userData.createdAt || "",
+            updatedAt: userData.updatedAt || "",
+          });
+        }
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+        const errorMessage =
+          error.response?.data?.message || "Failed to fetch profile data";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    };
+
+    fetchProfileData();
   }, [user]);
 
-  const roleDescriptions = {
-    admin: "Manage users, events, and view reports.",
-    lecturer: "Manage your class schedule and assignments.",
-    coordinator: "Approve events and manage resources.",
-    student: "View your schedule and participate in events.",
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // Handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
-    if (name.includes(".")) {
-      // Handle nested properties (preferences)
-      const [parent, child] = name.split(".");
-      setFormData({
-        ...formData,
-        [parent]: {
-          ...formData[parent],
-          [child]: type === "checkbox" ? checked : value,
-        },
+  const handleSaveChanges = async () => {
+    try {
+      const updatedData = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        departmentId: formData.departmentId,
+      };
+
+      const response = await apiClient.patch(`/users/${user.id}`, updatedData);
+
+      // Update user context
+      updateUser(response.data);
+
+      toast.success("Profile updated successfully");
+      setIsEditing(false);
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile";
+      toast.error(errorMessage);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+
+    try {
+      await apiClient.post(`/users/${user.id}/change-password`, {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
       });
-    } else {
-      // Handle top-level properties
+      // Or alternatively:
+      // await apiClient.post(`/users/change-password`, {
+      //   userId: user.id,
+      //   currentPassword: passwordData.currentPassword,
+      //   newPassword: passwordData.newPassword,
+      // });
+
+      toast.success("Password updated successfully");
+      setIsEditingPassword(false);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to update password";
+      toast.error(errorMessage);
+    }
+  };
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset form data to original values
+    if (user) {
       setFormData({
-        ...formData,
-        [name]: type === "checkbox" ? checked : value,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        role: user.role || 0,
+        roleName: user.roleName || "",
+        departmentId: user.departmentId || 0,
+        department: user.department || {},
+        enrolledBatch: user.enrolledBatch || null,
+        assignedModules: user.assignedModules || [],
+        createdAt: user.createdAt || "",
+        updatedAt: user.updatedAt || "",
       });
     }
   };
 
-  // Save profile changes
-  const handleSaveChanges = () => {
-    // In a real app, you would send this data to an API
-    alert("Profile settings saved successfully!");
+  const handleCancelPasswordEdit = () => {
+    setIsEditingPassword(false);
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
   };
 
-  // If no user is logged in, show a message or redirect
+  if (loading)
+    return <p className="text-center p-4">Loading profile data...</p>;
+
   if (!user) {
     return (
-      <div className="flex flex-col min-h-screen items-center justify-center">
-        <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold text-blue-700 mb-4">
-            Not Logged In
-          </h1>
-          <p className="text-gray-700 mb-4">
-            Please log in to view your profile settings.
-          </p>
-          <button
-            onClick={() => (window.location.href = "/login")}
-            className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
-          >
-            Go to Login
-          </button>
-        </div>
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+        <p className="text-red-700">
+          You need to be logged in to view this page.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
-      {/* Sidebar - hidden on mobile, visible on md breakpoint and up */}
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <ToastContainer position="top-right" autoClose={5000} />
 
-      {/* Profile content - full width on mobile, adjusted on larger screens */}
-      <div className="w-full md:w-3/4 lg:w-4/5 px-4 md:px-6 py-6 md:py-10">
-        <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-blue-700">Profile Settings</h1>
+      <header className="bg-blue-700 text-white p-4 shadow rounded-xl">
+        <div className="container mx-auto">
+          <h1 className="text-2xl font-bold">Profile Settings</h1>
+        </div>
+      </header>
 
-          {/* Profile header with image and role info */}
-          <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
-            <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-              <div>
-                <h2 className="text-xl font-bold">{formData.name}</h2>
-                <p className="text-gray-600">{formData.email}</p>
-                <div className="mt-2 inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium capitalize">
-                  {formData.role}
+      <div className="container mx-auto flex flex-col flex-grow p-4">
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow mb-6">
+          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+            <div className="relative"></div>
+            <div className="flex-grow">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold text-blue-700 mb-1">
+                    {`${formData.firstName} ${formData.lastName}`}
+                  </h2>
+                  <p className="text-gray-600">{formData.email}</p>
+                  <div className="mt-2 inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium capitalize">
+                    {formData.roleName}
+                  </div>
                 </div>
+                {!isEditing && activeTab === "general" && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                  >
+                    Edit Profile
+                  </button>
+                )}
+                {!isEditingPassword && activeTab === "security" && (
+                  <button
+                    onClick={() => setIsEditingPassword(true)}
+                    className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                  >
+                    Change Password
+                  </button>
+                )}
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Settings tabs */}
-          <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`py-3 px-6 font-medium ${
+              activeTab === "general"
+                ? "text-blue-700 border-b-2 border-blue-700"
+                : "text-gray-600"
+            }`}
+            onClick={() => setActiveTab("general")}
+          >
+            General
+          </button>
+          <button
+            className={`py-3 px-6 font-medium ${
+              activeTab === "security"
+                ? "text-blue-700 border-b-2 border-blue-700"
+                : "text-gray-600"
+            }`}
+            onClick={() => setActiveTab("security")}
+          >
+            Security
+          </button>
+          {formData.role === 2 && ( // Assuming role 2 is lecturer
             <button
               className={`py-3 px-6 font-medium ${
-                activeTab === "general"
+                activeTab === "modules"
                   ? "text-blue-700 border-b-2 border-blue-700"
                   : "text-gray-600"
               }`}
-              onClick={() => setActiveTab("general")}
+              onClick={() => setActiveTab("modules")}
             >
-              General
+              Modules
             </button>
-            <button
-              className={`py-3 px-6 font-medium ${
-                activeTab === "security"
-                  ? "text-blue-700 border-b-2 border-blue-700"
-                  : "text-gray-600"
-              }`}
-              onClick={() => setActiveTab("security")}
-            >
-              Security
-            </button>
+          )}
+        </div>
 
-            {/* Admin-only tab */}
-          </div>
+        <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
+          {activeTab === "general" && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-blue-700">
+                General Information
+              </h3>
 
-          {/* Settings content */}
-          <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
-            {activeTab === "general" && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-blue-700">
-                  General Information
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Full Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {isEditing && (
+                  <>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Email
+                  </label>
+                  <p>{formData.email}</p>
+                </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Department
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="departmentId"
+                      value={formData.departmentId}
                       onChange={handleInputChange}
                       className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      readOnly
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Department
-                    </label>
-                    <input
-                      type="text"
-                      name="department"
-                      value={formData.department}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Join Date
-                    </label>
-                    <input
-                      type="date"
-                      name="joinDate"
-                      value={formData.joinDate}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled
-                    />
-                  </div>
+                    >
+                      <option value="0">Select Department</option>
+                      <option value="1">Computer Science</option>
+                      <option value="2">Engineering</option>
+                      <option value="3">Business</option>
+                    </select>
+                  ) : (
+                    <p>
+                      {formData.department?.name || "No department assigned"}
+                    </p>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {activeTab === "security" && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-blue-700">
-                  Security Settings
-                </h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Member Since
+                  </label>
+                  <p>{new Date(formData.createdAt).toLocaleDateString()}</p>
                 </div>
-              </div>
-            )}
-
-            {user.role === "admin" && activeTab === "general" && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-blue-700 mb-3">
-                  Admin Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Last Updated
+                  </label>
+                  <p>{new Date(formData.updatedAt).toLocaleDateString()}</p>
+                </div>
+                {formData.enrolledBatch && (
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">
-                      Admin ID
+                      Batch
                     </label>
-                    <input
-                      type="text"
-                      value="ADM-2022-1845"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      readOnly
-                    />
+                    <p>{formData.enrolledBatch.name}</p>
                   </div>
-                </div>
+                )}
               </div>
-            )}
 
-            {user.role === "coordinator" && activeTab === "general" && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-blue-700 mb-3">
-                  Coordinator Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Coordinator ID
-                    </label>
-                    <input
-                      type="text"
-                      value="COORD-2022-1845"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      readOnly
-                    />
-                  </div>
+              {isEditing && (
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveChanges}
+                    className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+                  >
+                    Save Changes
+                  </button>
                 </div>
-              </div>
-            )}
-            {/* Role-specific content for lecturers */}
-            {user.role === "lecturer" && activeTab === "general" && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-blue-700 mb-3">
-                  Lecturer Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Faculty ID
-                    </label>
-                    <input
-                      type="text"
-                      value="FAC-2022-0451"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Role-specific content for students */}
-            {user.role === "student" && activeTab === "general" && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-blue-700 mb-3">
-                  Student Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Student ID
-                    </label>
-                    <input
-                      type="text"
-                      value="STU-2022-1845"
-                      className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      readOnly
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <button
-                onClick={handleSaveChanges}
-                className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"
-              >
-                Save Changes
-              </button>
+              )}
             </div>
-          </div>
+          )}
+
+          {activeTab === "security" && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-blue-700">
+                Security Settings
+              </h3>
+
+              {isEditingPassword ? (
+                <>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        minLength="6"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        minLength="6"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button
+                      onClick={handleCancelPasswordEdit}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handlePasswordUpdate}
+                      className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800"
+                    >
+                      Update Password
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-blue-800">
+                    Password last changed:{" "}
+                    {new Date(user.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "modules" && formData.role === 2 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-blue-700">
+                Assigned Modules
+              </h3>
+
+              {formData.assignedModules.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {formData.assignedModules.map((module) => (
+                    <div
+                      key={module.id}
+                      className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
+                    >
+                      <h3 className="text-lg font-semibold text-blue-700">
+                        {module.name}
+                      </h3>
+                      <p className="text-gray-700 mt-2">
+                        <span className="font-semibold">Code:</span>{" "}
+                        {module.code}
+                      </p>
+                      <p className="text-gray-700">
+                        <span className="font-semibold">Credit Hours:</span>{" "}
+                        {module.creditHours}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500">No modules assigned</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default ProfileSettings;
+export default Profile;
