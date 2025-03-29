@@ -24,12 +24,22 @@ model User {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  student               StudentBatch?
-  modules               LecturerModule[]
-  assignments           Assignment[]
-  assignmentSubmissions AssignmentSubmission[]
+  studentBatch                 StudentBatch?
+  lecturerModules              LecturerModule[]
+  createdAssignments           Assignment[]
+  studentAssignmentSubmissions AssignmentSubmission[]
 
   @@map("user")
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("department")
 }
 
 model Module {
@@ -77,13 +87,13 @@ model CourseModule {
 }
 
 model Batch {
-  id              Int      @id @default(autoincrement())
-  courseId        Int      @map("course_id")
-  name            String
-  startDate       DateTime @map("start_date")
-  endDate         DateTime @map("end_date")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  courseId  Int      @map("course_id")
+  name      String
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   students    StudentBatch[]
@@ -156,4 +166,25 @@ model AssignmentSubmission {
 
   @@unique([assignmentId, studentId])
   @@map("assignment_submission")
+}
+
+model Classroom {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  capacity    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("classroom")
+}
+
+model Equipment {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String
+  quantity    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("equipment")
 }

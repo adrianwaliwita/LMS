@@ -11,15 +11,28 @@ const UserRoles = Object.freeze({
 });
 
 class User {
-    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt }) {
+    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt, studentBatch, lecturerModules }) {
         this.id = id;
         this.firebaseUid = firebaseUid;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
+        this.roleName = UserRoles[role];
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+
+        // Optional fields for "Student" role
+        this.enrolledBatch = null;
+        if (role === UserRoles.STUDENT) {
+            this.enrolledBatch = studentBatch ? new Batch(studentBatch) : null;
+        }
+        
+        // Optional fields for "Lecturer" role
+        this.assignedModules = null;
+        if (role === UserRoles.LECTURER) {
+            this.assignedModules = lecturerModules?.map(m => new Module(m.module)) || [];
+        }
     }
 
     static async getUserById(id) {
@@ -43,12 +56,50 @@ class User {
         return users.map(user => new User(user));
     }
 
-    static async createUser({ email, password, firstName, lastName, role }) {
+    static generateSecurePassword() {
+        // Generate a random password with:
+        // - At least 1 uppercase letter
+        // - At least 1 lowercase letter
+        // - At least 1 number
+        // - At least 1 special character
+        // - Total length of 12 characters
+        const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+        const numberChars = '0123456789';
+        const specialChars = '!@#$%^&*';
+        
+        // Ensure at least one of each type
+        const password = [
+            uppercaseChars[crypto.randomInt(uppercaseChars.length)],
+            lowercaseChars[crypto.randomInt(lowercaseChars.length)],
+            numberChars[crypto.randomInt(numberChars.length)],
+            specialChars[crypto.randomInt(specialChars.length)]
+        ];
+        
+        // Fill the rest with random characters from all types
+        const allChars = uppercaseChars + lowercaseChars + numberChars + specialChars;
+        for (let i = password.length; i < 12; i++) {
+            password.push(allChars[crypto.randomInt(allChars.length)]);
+        }
+        
+        // Shuffle the password array
+        for (let i = password.length - 1; i > 0; i--) {
+            const j = crypto.randomInt(i + 1);
+            [password[i], password[j]] = [password[j], password[i]];
+        }
+        
+        return password.join('');
+    }
+
+    static async createUser({ email, firstName, lastName, role, enrolledBatchId, assignedModuleIds }) {
         let firebaseUser;
         try {
+            // Generate a secure password
+            const generatedPassword = User.generateSecurePassword();
+
             firebaseUser = await auth.createUser({
                 email,
-                password,
+                password: generatedPassword,
                 displayName: `${firstName} ${lastName}`
             });
 
@@ -59,9 +110,29 @@ class User {
                         firstName: firstName,
                         lastName: lastName,
                         email: email,
-                        role: role
+                        role: Number(role)
                     }
                 });
+
+                // If user is a student, create StudentBatch record
+                if (role === 4 && enrolledBatchId) { // 4 is STUDENT role
+                    await tx.studentBatch.create({
+                        data: {
+                            userId: newUser.id,
+                            batchId: Number(enrolledBatchId)
+                        }
+                    });
+                }
+
+                // If user is a lecturer, create LecturerModule records
+                if (role === 3 && assignedModuleIds?.length > 0) { // 3 is LECTURER role
+                    await tx.lecturerModule.createMany({
+                        data: assignedModuleIds.map(moduleId => ({
+                            userId: newUser.id,
+                            moduleId: Number(moduleId)
+                        }))
+                    });
+                }
 
                 // Set custom claims for user
                 await auth.setCustomUserClaims(firebaseUser.uid, {

@@ -42,13 +42,13 @@ export const listUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, firstName, lastName, role, enrolledBatchId, assignedModuleIds } = req.body;
 
     // Validate required fields
-    if (!email || !password || !firstName || !lastName || role === undefined) {
+    if (!email || !firstName || !lastName || role === undefined) {
         return res.status(400).json({
             error: 'Missing required fields',
-            message: 'email, password, firstName, lastName, and role are required'
+            message: 'email, firstName, lastName, and role are required'
         });
     }
 
@@ -61,14 +61,6 @@ export const createUser = async (req, res) => {
         });
     }
 
-    // Validate password strength
-    if (password.length < 6) {
-        return res.status(400).json({
-            error: 'Weak password',
-            message: 'password must be at least 6 characters long'
-        });
-    }
-
     // Validate role
     const validRoles = Object.keys(UserRoles).map(Number);
     if (!validRoles.includes(Number(role))) {
@@ -78,16 +70,43 @@ export const createUser = async (req, res) => {
         });
     }
 
+    // Validate enrolledBatchId for student role
+    if (Number(role) === 4 && !enrolledBatchId) { // 4 is STUDENT role
+        return res.status(400).json({
+            error: 'Missing batch enrollment',
+            message: 'enrolledBatchId is required for student role'
+        });
+    }
+
+    // Validate assignedModuleIds for lecturer role
+    if (Number(role) === 3) { // 3 is LECTURER role
+        if (!assignedModuleIds || !Array.isArray(assignedModuleIds) || assignedModuleIds.length === 0) {
+            return res.status(400).json({
+                error: 'Missing module assignments',
+                message: 'assignedModuleIds array is required for lecturer role and cannot be empty'
+            });
+        }
+
+        // Validate that all module IDs are numbers
+        if (!assignedModuleIds.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
+            return res.status(400).json({
+                error: 'Invalid module IDs',
+                message: 'All assignedModuleIds must be positive integers'
+            });
+        }
+    }
+
     try {
         const user = await User.createUser({
             email,
-            password,
             firstName,
             lastName,
-            role: Number(role)
+            role,
+            enrolledBatchId,
+            assignedModuleIds
         });
 
-        logger.info(`[user.createUser] User created successfully for email: '${email}'`);
+        logger.info(`[user.createUser] User created successfully for email: '${email}'. Password will be sent via email.`);
         res.status(201).json(user);
     } catch (error) {
         // Handle specific error cases
@@ -95,6 +114,16 @@ export const createUser = async (req, res) => {
             return res.status(409).json({
                 error: 'Email already exists',
                 message: 'A user with this email already exists'
+            });
+        }
+
+        if (error.code === 'P2003') {
+            // Foreign key constraint failed
+            return res.status(400).json({
+                error: 'Invalid reference',
+                message: error.meta?.field_name === 'batch_id' 
+                    ? 'The specified batch does not exist'
+                    : 'One or more specified modules do not exist'
             });
         }
         
