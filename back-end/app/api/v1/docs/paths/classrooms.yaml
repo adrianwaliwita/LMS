@@ -27,6 +27,8 @@ classrooms:
               $ref: '../openapi.yaml#/components/schemas/Error'
   
   post:
+    tags:
+      - Classrooms
     summary: Create a new classroom
     description: Create a new classroom with a unique name
     requestBody:
