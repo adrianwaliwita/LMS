@@ -29,14 +29,28 @@ export async function seedEquipment(prisma) {
 
     console.log('Seeding equipment...');
 
-    for (const item of equipment) {
-        const result = await prisma.equipment.upsert({
-            where: { name: item.name },
-            update: {},
-            create: item
-        });
-        console.log(`Created equipment: ${result.name} (ID: ${result.id})`);
-    }
+    const equipmentPromises = equipment.map(async (item) => {
+        try {
+            const result = await prisma.equipment.upsert({
+                where: { name: item.name },
+                update: {},
+                create: item
+            });
+            return { success: true, result };
+        } catch (error) {
+            return { success: false, error, item };
+        }
+    });
+
+    const results = await Promise.all(equipmentPromises);
+
+    results.forEach(({ success, result, error, item }) => {
+        if (success) {
+            console.log(`Created equipment: ${result.name} (ID: ${result.id})`);
+        } else {
+            console.error(`Failed to create equipment ${item.name}:`, error);
+        }
+    });
 
     console.log('Finished seeding equipment.');
 } 

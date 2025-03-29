@@ -44,14 +44,28 @@ export async function seedModules(prisma) {
 
     console.log('Seeding modules...');
 
-    for (const module of modules) {
-        const result = await prisma.module.upsert({
-            where: { title: module.title },
-            update: {},
-            create: module
-        });
-        console.log(`Created module: ${result.title} (ID: ${result.id})`);
-    }
+    const modulePromises = modules.map(async (module) => {
+        try {
+            const result = await prisma.module.upsert({
+                where: { title: module.title },
+                update: {},
+                create: module
+            });
+            return { success: true, result };
+        } catch (error) {
+            return { success: false, error, module };
+        }
+    });
+
+    const results = await Promise.all(modulePromises);
+
+    results.forEach(({ success, result, error, module }) => {
+        if (success) {
+            console.log(`Created module: ${result.title} (ID: ${result.id})`);
+        } else {
+            console.error(`Failed to create module ${module.title}:`, error);
+        }
+    });
 
     console.log('Finished seeding modules.');
-} 
+}

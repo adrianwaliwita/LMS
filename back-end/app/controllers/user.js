@@ -42,13 +42,13 @@ export const listUsers = async (req, res) => {
 };
 
 export const createUser = async (req, res) => {
-    const { email, firstName, lastName, role, enrolledBatchId, assignedModuleIds } = req.body;
+    const { email, firstName, lastName, role, enrolledBatchId, assignedModuleIds, departmentId } = req.body;
 
     // Validate required fields
-    if (!email || !firstName || !lastName || role === undefined) {
+    if (!email || !firstName || !lastName || role === undefined || !departmentId) {
         return res.status(400).json({
             error: 'Missing required fields',
-            message: 'email, firstName, lastName, and role are required'
+            message: 'email, firstName, lastName, role, and departmentId are required'
         });
     }
 
@@ -67,6 +67,14 @@ export const createUser = async (req, res) => {
         return res.status(400).json({
             error: 'Invalid role',
             message: `role must be one of: ${Object.entries(UserRoles).map(([key, value]) => `${key} (${value})`).join(', ')}`
+        });
+    }
+
+    // Validate departmentId
+    if (!Number.isInteger(Number(departmentId)) || Number(departmentId) <= 0) {
+        return res.status(400).json({
+            error: 'Invalid department ID',
+            message: 'departmentId must be a positive integer'
         });
     }
 
@@ -102,6 +110,7 @@ export const createUser = async (req, res) => {
             firstName,
             lastName,
             role,
+            departmentId,
             enrolledBatchId,
             assignedModuleIds
         });
@@ -119,11 +128,18 @@ export const createUser = async (req, res) => {
 
         if (error.code === 'P2003') {
             // Foreign key constraint failed
+            let errorMessage = 'Invalid reference';
+            if (error.meta?.field_name === 'batch_id') {
+                errorMessage = 'The specified batch does not exist';
+            } else if (error.meta?.field_name === 'department_id') {
+                errorMessage = 'The specified department does not exist';
+            } else {
+                errorMessage = 'One or more specified modules do not exist';
+            }
+            
             return res.status(400).json({
                 error: 'Invalid reference',
-                message: error.meta?.field_name === 'batch_id' 
-                    ? 'The specified batch does not exist'
-                    : 'One or more specified modules do not exist'
+                message: errorMessage
             });
         }
         
@@ -137,18 +153,18 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { firstName, lastName, role } = req.body;
+    const { firstName, lastName, role, departmentId } = req.body;
 
     // Validate that at least one field is provided for update
-    if (!firstName && !lastName && role === undefined) {
+    if (!firstName && !lastName && role === undefined && departmentId === undefined) {
         return res.status(400).json({
             error: 'Missing fields',
-            message: 'At least one field (firstName, lastName, or role) must be provided for update'
+            message: 'At least one field (firstName, lastName, role, or departmentId) must be provided for update'
         });
     }
 
     // Validate firstName and lastName if provided
-    if (!firstName?.trim() || !lastName?.trim()) {
+    if (firstName !== undefined && !firstName?.trim() || lastName !== undefined && !lastName?.trim()) {
         return res.status(400).json({
             error: 'Invalid input',
             message: `${!firstName?.trim() ? 'firstName' : 'lastName'} cannot be empty`
@@ -165,9 +181,19 @@ export const updateUser = async (req, res) => {
             });
         }
     }
+
+    // Validate departmentId if provided
+    if (departmentId !== undefined) {
+        if (!Number.isInteger(Number(departmentId)) || Number(departmentId) <= 0) {
+            return res.status(400).json({
+                error: 'Invalid department ID',
+                message: 'departmentId must be a positive integer'
+            });
+        }
+    }
     
     try {
-        const user = await User.updateUser({ id, firstName, lastName, role });
+        const user = await User.updateUser({ id, firstName, lastName, role, departmentId });
 
         logger.info(`[user.updateUser] User updated successfully for ID: '${id}'`);
         res.json(user);
@@ -176,6 +202,13 @@ export const updateUser = async (req, res) => {
             return res.status(404).json({
                 error: 'User not found',
                 message: 'No user found with the provided ID'
+            });
+        }
+
+        if (error.code === 'P2003' && error.meta?.field_name === 'department_id') {
+            return res.status(400).json({
+                error: 'Invalid department',
+                message: 'The specified department does not exist'
             });
         }
         

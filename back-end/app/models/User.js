@@ -1,6 +1,9 @@
 import { auth } from '../firebase/firebase-admin.js';
 import prisma from '../utils/prisma.js';
 import logger from '../utils/logger.js';
+import { Department } from './Department.js';
+import { Batch } from './Batch.js';
+import { Module } from './Module.js';
 
 const UserRoles = Object.freeze({
     0: 'TERMINATED',
@@ -11,7 +14,7 @@ const UserRoles = Object.freeze({
 });
 
 class User {
-    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt, studentBatch, lecturerModules }) {
+    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt, department, studentBatch, lecturerModules }) {
         this.id = id;
         this.firebaseUid = firebaseUid;
         this.email = email;
@@ -21,23 +24,37 @@ class User {
         this.roleName = UserRoles[role];
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.department = new Department(department);
 
         // Optional fields for "Student" role
         this.enrolledBatch = null;
-        if (role === UserRoles.STUDENT) {
-            this.enrolledBatch = studentBatch ? new Batch(studentBatch) : null;
+        if (role === 4) { // STUDENT
+            this.enrolledBatch = studentBatch?.batch ? new Batch(studentBatch.batch) : null;
         }
         
         // Optional fields for "Lecturer" role
         this.assignedModules = null;
-        if (role === UserRoles.LECTURER) {
+        if (role === 3) { // LECTURER
             this.assignedModules = lecturerModules?.map(m => new Module(m.module)) || [];
         }
     }
 
     static async getUserById(id) {
         const user = await prisma.user.findUnique({
-            where: { id: Number(id) }
+            where: { id: Number(id) },
+            include: {
+                department: true,
+                studentBatch: {
+                    include: {
+                        batch: true
+                    }
+                },
+                lecturerModules: {
+                    include: {
+                        module: true
+                    }
+                }
+            }
         });
 
         return user ? new User(user) : null;
@@ -50,6 +67,19 @@ class User {
                     role ? { role: Number(role) } : {},
                     email ? { email: { contains: email } } : {}
                 ]
+            },
+            include: {
+                department: true,
+                studentBatch: {
+                    include: {
+                        batch: true
+                    }
+                },
+                lecturerModules: {
+                    include: {
+                        module: true
+                    }
+                }
             }
         });
 
@@ -91,7 +121,7 @@ class User {
         return password.join('');
     }
 
-    static async createUser({ email, firstName, lastName, role, enrolledBatchId, assignedModuleIds }) {
+    static async createUser({ email, firstName, lastName, role, departmentId, enrolledBatchId, assignedModuleIds }) {
         let firebaseUser;
         try {
             // Generate a secure password
@@ -110,7 +140,8 @@ class User {
                         firstName: firstName,
                         lastName: lastName,
                         email: email,
-                        role: Number(role)
+                        role: Number(role),
+                        departmentId: departmentId ? Number(departmentId) : null
                     }
                 });
 
@@ -161,14 +192,15 @@ class User {
         }
     }
 
-    static async updateUser({ id, firstName, lastName, role }) {
+    static async updateUser({ id, firstName, lastName, role, departmentId }) {
         const user = await prisma.$transaction(async (tx) => {
             const updatedUser = await tx.user.update({
                 where: { id: Number(id) },
                 data: {
                     firstName,
                     lastName,
-                    role: role !== undefined ? Number(role) : undefined
+                    role: role !== undefined ? Number(role) : undefined,
+                    departmentId: departmentId !== undefined ? Number(departmentId) : undefined
                 }
             });
 

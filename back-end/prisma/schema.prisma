@@ -15,15 +15,17 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
-  firebaseUid String   @unique @map("firebase_uid")
-  firstName   String   @map("first_name")
-  lastName    String   @map("last_name")
-  email       String   @unique
-  role        Int
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  departmentId Int      @map("department_id")
+  firebaseUid  String   @unique @map("firebase_uid")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String   @unique
+  role         Int
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
+  department                   Department             @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   studentBatch                 StudentBatch?
   lecturerModules              LecturerModule[]
   createdAssignments           Assignment[]
@@ -38,6 +40,9 @@ model Department {
   description String
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users  User[]
+  Course Course[]
 
   @@map("department")
 }
@@ -57,17 +62,19 @@ model Module {
 }
 
 model Course {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  description String
-  category    Int
-  level       Int
-  price       Float
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  departmentId Int      @map("department_id")
+  title        String   @unique
+  description  String
+  category     Int
+  level        Int
+  price        Float
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  batches Batch[]
-  modules CourseModule[]
+  department Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  batches    Batch[]
+  modules    CourseModule[]
 
   @@map("course")
 }
@@ -169,11 +176,11 @@ model AssignmentSubmission {
 }
 
 model Classroom {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  capacity    Int
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  capacity  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("classroom")
 }

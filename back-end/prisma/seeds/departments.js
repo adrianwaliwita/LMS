@@ -1,37 +1,55 @@
 export async function seedDepartments(prisma) {
+    console.log('Seeding departments...');
+
     const departments = [
         {
+            name: 'Administration',
+            description: 'Central administrative department managing institutional operations and support services'
+        },
+        {
             name: 'School of Computing',
-            description: 'Specializing in software engineering, cybersecurity, and artificial intelligence'
+            description: 'Focused on software engineering, artificial intelligence, and computer science education.'
         },
         {
             name: 'School of Business',
-            description: 'Focusing on business management, finance, and entrepreneurship studies'
+            description: 'Specializing in business management, finance, and entrepreneurship education.'
         },
         {
             name: 'Department of Engineering',
-            description: 'Offering programs in mechanical, electrical, and civil engineering'
+            description: 'Covering mechanical, electrical, and civil engineering disciplines.'
         },
         {
             name: 'Digital Arts Academy',
-            description: 'Creative hub for digital design, animation, and interactive media'
+            description: 'Focused on digital design, animation, and multimedia production.'
         },
         {
             name: 'Data Science Institute',
-            description: 'Advanced analytics, machine learning, and big data technologies'
+            description: 'Specializing in data analytics, machine learning, and statistical analysis.'
         }
     ];
 
-    console.log('Seeding departments...');
+    const departmentPromises = departments.map(async (dept) => {
+        try {
+            const result = await prisma.department.upsert({
+                where: { name: dept.name },
+                update: {},
+                create: dept
+            });
+            return { success: true, result };
+        } catch (error) {
+            return { success: false, error, department: dept };
+        }
+    });
 
-    for (const department of departments) {
-        const result = await prisma.department.upsert({
-            where: { name: department.name },
-            update: {},
-            create: department
-        });
-        console.log(`Created department: ${result.name} (ID: ${result.id})`);
-    }
+    const results = await Promise.all(departmentPromises);
+
+    results.forEach(({ success, result, error, department }) => {
+        if (success) {
+            console.log(`Created department: ${result.name}`);
+        } else {
+            console.error(`Failed to create department ${department.name}:`, error);
+        }
+    });
 
     console.log('Finished seeding departments.');
 } 

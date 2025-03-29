@@ -1,4 +1,5 @@
 import prisma from '../utils/prisma.js';
+import { Department } from './Department.js';
 import { Module } from './Module.js';
 
 const CourseLevels = Object.freeze({
@@ -16,15 +17,18 @@ const CourseCategories = Object.freeze({
 });
 
 class Course {
-    constructor({ id, title, description, category, level, price, createdAt, updatedAt, modules }) {
+    constructor({ id, title, description, category, level, price, createdAt, updatedAt, department, modules }) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.category = category;
+        this.categoryName = CourseCategories[category];
         this.level = level;
+        this.levelName = CourseLevels[level];
         this.price = price;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.department = department ? new Department(department) : null;
         this.modules = modules?.map(m => new Module(m.module)) || [];
     }
 
@@ -36,33 +40,36 @@ class Course {
                     select: {
                         module: true
                     }
-                }
+                },
+                department: true
             }
         });
 
         return course ? new Course(course) : null;
     }
 
-    static async getAllCourses({ title, category, level }) {
+    static async getAllCourses({ title, category, level, departmentId }) {
         const courses = await prisma.course.findMany({
             where: {
                 ...(title && { title: { contains: title } }),
                 ...(category && { category: Number(category) }),
-                ...(level && { level: Number(level) })
+                ...(level && { level: Number(level) }),
+                ...(departmentId && { departmentId: Number(departmentId) })
             },
             include: {
                 modules: {
                     select: {
                         module: true
                     }
-                }
+                },
+                department: true
             }
         });
 
         return courses.map(course => new Course(course));
     }
 
-    static async createCourse({ title, description, category, level, price, moduleIds = [] }) {
+    static async createCourse({ title, description, category, level, price, departmentId, moduleIds = [] }) {
         const newCourse = await prisma.$transaction(async (tx) => {
             const course = await tx.course.create({
                 data: {
@@ -71,6 +78,7 @@ class Course {
                     category: Number(category),
                     level: Number(level),
                     price: Number(price),
+                    departmentId: Number(departmentId),
                     ...(moduleIds.length > 0 && {
                         modules: {
                             create: moduleIds.map(moduleId => ({
@@ -86,7 +94,8 @@ class Course {
                         select: {
                             module: true
                         }
-                    }
+                    },
+                    department: true
                 }
             });
             return course;
@@ -95,7 +104,7 @@ class Course {
         return new Course(newCourse);
     }
 
-    static async updateCourse({ id, title, description, category, level, price, moduleIds }) {
+    static async updateCourse({ id, title, description, category, level, price, departmentId, moduleIds }) {
         const updatedCourse = await prisma.course.update({
             where: { id: Number(id) },
             data: {
@@ -104,6 +113,7 @@ class Course {
                 category: category !== undefined ? Number(category) : undefined,
                 level: level !== undefined ? Number(level) : undefined,
                 price: price !== undefined ? Number(price) : undefined,
+                departmentId: departmentId !== undefined ? Number(departmentId) : undefined,
                 ...(moduleIds !== undefined && {
                     modules: {
                         deleteMany: {},
@@ -120,7 +130,8 @@ class Course {
                     select: {
                         module: true
                     }
-                }
+                },
+                department: true
             }
         });
 

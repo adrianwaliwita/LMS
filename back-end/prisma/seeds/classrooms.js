@@ -24,14 +24,28 @@ export async function seedClassrooms(prisma) {
 
     console.log('Seeding classrooms...');
 
-    for (const classroom of classrooms) {
-        const result = await prisma.classroom.upsert({
-            where: { name: classroom.name },
-            update: {},
-            create: classroom
-        });
-        console.log(`Created classroom: ${result.name} (ID: ${result.id})`);
-    }
+    const classroomPromises = classrooms.map(async (classroom) => {
+        try {
+            const result = await prisma.classroom.upsert({
+                where: { name: classroom.name },
+                update: {},
+                create: classroom
+            });
+            return { success: true, result };
+        } catch (error) {
+            return { success: false, error, classroom };
+        }
+    });
+
+    const results = await Promise.all(classroomPromises);
+
+    results.forEach(({ success, result, error, classroom }) => {
+        if (success) {
+            console.log(`Created classroom: ${result.name} (ID: ${result.id})`);
+        } else {
+            console.error(`Failed to create classroom ${classroom.name}:`, error);
+        }
+    });
 
     console.log('Finished seeding classrooms.');
 } 
