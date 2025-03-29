@@ -24,7 +24,7 @@ class User {
         this.roleName = UserRoles[role];
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.department = new Department(department);
+        this.department = department ? new Department(department) : null;
 
         // Optional fields for "Student" role
         this.enrolledBatch = null;

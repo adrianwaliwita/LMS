@@ -3,7 +3,7 @@ assignments:
     tags:
       - Assignments
     summary: List assignments
-    description: Retrieve a list of assignments filtered by batch or module. At least one filter must be provided.
+    description: Retrieve a list of assignments, if required can be filtered by batch or module.
     parameters:
       - name: batchId
         in: query
@@ -17,7 +17,7 @@ assignments:
           type: integer
     responses:
       '200':
-        description: List of assignments matching the filters
+        description: List of assignments
         content:
           application/json:
             schema:
@@ -25,7 +25,7 @@ assignments:
               items:
                 $ref: '../openapi.yaml#/components/schemas/Assignment'
       '400':
-        description: No filters provided or invalid filter values
+        description: Invalid filter values
         content:
           application/json:
             schema:

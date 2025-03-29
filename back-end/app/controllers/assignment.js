@@ -206,15 +206,6 @@ export const listAssignments = async (req, res) => {
     try {
         const { batchId, moduleId } = req.query;
 
-        // Validate that at least one filter is provided
-        if (!batchId && !moduleId) {
-            logger.info('[assignment.listAssignments] No filters provided');
-            return res.status(400).json({
-                error: 'Missing filters',
-                message: 'At least one filter (batchId or moduleId) must be provided'
-            });
-        }
-
         // Validate filter values if provided
         if (batchId && isNaN(Number(batchId))) {
             return res.status(400).json({
