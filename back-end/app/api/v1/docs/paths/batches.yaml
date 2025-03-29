@@ -3,7 +3,12 @@
     tags:
       - Batches
     summary: List all batches
-    description: Retrieve a list of all batches with optional filters
+    description: >
+      Retrieve a list of all batches with optional filters.
+      Each batch includes:
+      * Course details
+      * Current status (UPCOMING, ONGOING, COMPLETED)
+      * Start and end dates
     parameters:
       - name: courseId
         in: query
@@ -17,7 +22,7 @@
         description: Filter batches by name (partial match)
     responses:
       200:
-        description: A list of batches
+        description: List of batches retrieved successfully
         content:
           application/json:
             schema:
@@ -25,7 +30,7 @@
               items:
                 $ref: '#/components/schemas/Batch'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -35,7 +40,10 @@
     tags:
       - Batches
     summary: Create a new batch
-    description: Create a new batch for a course
+    description: >
+      Create a new batch for a course.
+      The batch name must be unique within the course.
+      Start date must be before end date.
     requestBody:
       required: true
       content:
@@ -53,7 +61,7 @@
                 description: ID of the course this batch belongs to
               name:
                 type: string
-                description: Name of the batch
+                description: Unique name for the batch within the course
               startDate:
                 type: string
                 format: date-time
@@ -61,7 +69,7 @@
               endDate:
                 type: string
                 format: date-time
-                description: End date of the batch
+                description: End date of the batch (must be after start date)
     responses:
       201:
         description: Batch created successfully
@@ -88,26 +96,38 @@
                 value:
                   error: "Invalid course ID"
                   message: "Course with ID {id} does not exist"
+      409:
+        description: Batch name already exists for this course
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+            example:
+              error: "Duplicate batch"
+              message: "A batch with this name already exists for this course"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
 
 /batches/{id}:
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Batch ID
+
   get:
     tags:
       - Batches
-    summary: Get a batch by ID
-    description: Retrieve a single batch by its ID
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Batch ID
+    summary: Get batch by ID
+    description: >
+      Retrieve a single batch by its ID.
+      Includes course details and current status.
     responses:
       200:
         description: Batch found
@@ -122,7 +142,7 @@
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -131,15 +151,11 @@
   patch:
     tags:
       - Batches
-    summary: Update a batch
-    description: Update a batch's details
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Batch ID
+    summary: Update batch
+    description: >
+      Update a batch's details.
+      At least one field must be provided.
+      If updating dates, they must maintain valid order (start before end).
     requestBody:
       required: true
       content:
@@ -150,18 +166,18 @@
             properties:
               courseId:
                 type: integer
-                description: ID of the course this batch belongs to
+                description: New course ID (must exist)
               name:
                 type: string
-                description: Name of the batch
+                description: New name for the batch (must be unique within course)
               startDate:
                 type: string
                 format: date-time
-                description: Start date of the batch
+                description: New start date
               endDate:
                 type: string
                 format: date-time
-                description: End date of the batch
+                description: New end date (must be after start date)
     responses:
       200:
         description: Batch updated successfully
@@ -194,8 +210,17 @@
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
+      409:
+        description: Batch name already exists for this course
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+            example:
+              error: "Duplicate batch"
+              message: "A batch with this name already exists for this course"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -204,15 +229,8 @@
   delete:
     tags:
       - Batches
-    summary: Delete a batch
+    summary: Delete batch
     description: Delete a batch by its ID
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Batch ID
     responses:
       204:
         description: Batch deleted successfully
@@ -223,7 +241,7 @@
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:

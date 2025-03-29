@@ -4,6 +4,9 @@
   "description": "AshBourne SCMS - Backend API",
   "main": "server.js",
   "type": "module",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "start": "node app/server.js",
     "dev": "nodemon app/server.js",
@@ -13,7 +16,8 @@
     "prisma:migrate:draft": "prisma migrate dev --name init --create-only",
     "prisma:migrate:prod": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:schema:export": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > db_schema.sql"
+    "prisma:schema:export": "prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > db_schema.sql",
+    "prisma:seed": "prisma db seed"
   },
   "keywords": [],
   "author": "",

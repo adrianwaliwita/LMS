@@ -1,0 +1,193 @@
+classrooms:
+  get:
+    tags:
+      - Classrooms
+    summary: List classrooms
+    description: Retrieve a list of all classrooms with optional name filtering
+    parameters:
+      - name: name
+        in: query
+        description: Filter classrooms by name (partial match)
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of classrooms
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../openapi.yaml#/components/schemas/Classroom'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  
+  post:
+    summary: Create a new classroom
+    description: Create a new classroom with a unique name
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - capacity
+            properties:
+              name:
+                type: string
+                description: Classroom name (must be unique)
+              capacity:
+                type: integer
+                description: Classroom capacity (must be positive)
+                minimum: 1
+    responses:
+      '201':
+        description: Classroom created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Classroom'
+      '400':
+        description: Missing required fields, empty name, or invalid capacity
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: Classroom name already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+classrooms/{id}:
+  get:
+    tags:
+      - Classrooms
+    summary: Get classroom details
+    description: Retrieve details of a specific classroom by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classroom ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Classroom details retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Classroom'
+      '404':
+        description: Classroom not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+  patch:
+    tags:
+      - Classrooms
+    summary: Update classroom details
+    description: Update details of a specific classroom. At least one field must be provided.
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classroom ID
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            properties:
+              name:
+                type: string
+                description: New classroom name (must be unique)
+              capacity:
+                type: integer
+                description: New classroom capacity (must be positive)
+                minimum: 1
+    responses:
+      '200':
+        description: Classroom updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Classroom'
+      '400':
+        description: No fields provided, empty name, or invalid capacity
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Classroom not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: New classroom name already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+  delete:
+    tags:
+      - Classrooms
+    summary: Delete classroom
+    description: Delete a specific classroom by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Classroom ID
+        schema:
+          type: integer
+    responses:
+      '204':
+        description: Classroom deleted successfully
+      '404':
+        description: Classroom not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error' 

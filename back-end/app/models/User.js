@@ -1,6 +1,9 @@
 import { auth } from '../firebase/firebase-admin.js';
 import prisma from '../utils/prisma.js';
 import logger from '../utils/logger.js';
+import { Department } from './Department.js';
+import { Batch } from './Batch.js';
+import { Module } from './Module.js';
 
 const UserRoles = Object.freeze({
     0: 'TERMINATED',
@@ -11,20 +14,47 @@ const UserRoles = Object.freeze({
 });
 
 class User {
-    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt }) {
+    constructor({ id, firebaseUid, email, firstName, lastName, role, createdAt, updatedAt, department, studentBatch, lecturerModules }) {
         this.id = id;
         this.firebaseUid = firebaseUid;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.role = role;
+        this.roleName = UserRoles[role];
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.department = new Department(department);
+
+        // Optional fields for "Student" role
+        this.enrolledBatch = null;
+        if (role === 4) { // STUDENT
+            this.enrolledBatch = studentBatch?.batch ? new Batch(studentBatch.batch) : null;
+        }
+        
+        // Optional fields for "Lecturer" role
+        this.assignedModules = null;
+        if (role === 3) { // LECTURER
+            this.assignedModules = lecturerModules?.map(m => new Module(m.module)) || [];
+        }
     }
 
     static async getUserById(id) {
         const user = await prisma.user.findUnique({
-            where: { id: Number(id) }
+            where: { id: Number(id) },
+            include: {
+                department: true,
+                studentBatch: {
+                    include: {
+                        batch: true
+                    }
+                },
+                lecturerModules: {
+                    include: {
+                        module: true
+                    }
+                }
+            }
         });
 
         return user ? new User(user) : null;
@@ -37,18 +67,69 @@ class User {
                     role ? { role: Number(role) } : {},
                     email ? { email: { contains: email } } : {}
                 ]
+            },
+            include: {
+                department: true,
+                studentBatch: {
+                    include: {
+                        batch: true
+                    }
+                },
+                lecturerModules: {
+                    include: {
+                        module: true
+                    }
+                }
             }
         });
 
         return users.map(user => new User(user));
     }
 
-    static async createUser({ email, password, firstName, lastName, role }) {
+    static generateSecurePassword() {
+        // Generate a random password with:
+        // - At least 1 uppercase letter
+        // - At least 1 lowercase letter
+        // - At least 1 number
+        // - At least 1 special character
+        // - Total length of 12 characters
+        const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+        const numberChars = '0123456789';
+        const specialChars = '!@#$%^&*';
+        
+        // Ensure at least one of each type
+        const password = [
+            uppercaseChars[Math.floor(Math.random() * uppercaseChars.length)],
+            lowercaseChars[Math.floor(Math.random() * lowercaseChars.length)],
+            numberChars[Math.floor(Math.random() * numberChars.length)],
+            specialChars[Math.floor(Math.random() * specialChars.length)]
+        ];
+        
+        // Fill the rest with random characters from all types
+        const allChars = uppercaseChars + lowercaseChars + numberChars + specialChars;
+        for (let i = password.length; i < 12; i++) {
+            password.push(allChars[Math.floor(Math.random() * allChars.length)]);
+        }
+        
+        // Shuffle the password array
+        for (let i = password.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [password[i], password[j]] = [password[j], password[i]];
+        }
+        
+        return password.join('');
+    }
+
+    static async createUser({ email, firstName, lastName, role, departmentId, enrolledBatchId, assignedModuleIds }) {
         let firebaseUser;
         try {
+            // Generate a secure password
+            const generatedPassword = User.generateSecurePassword();
+
             firebaseUser = await auth.createUser({
                 email,
-                password,
+                password: generatedPassword,
                 displayName: `${firstName} ${lastName}`
             });
 
@@ -59,9 +140,30 @@ class User {
                         firstName: firstName,
                         lastName: lastName,
                         email: email,
-                        role: role
+                        role: Number(role),
+                        departmentId: departmentId ? Number(departmentId) : null
                     }
                 });
+
+                // If user is a student, create StudentBatch record
+                if (role === 4 && enrolledBatchId) { // 4 is STUDENT role
+                    await tx.studentBatch.create({
+                        data: {
+                            userId: newUser.id,
+                            batchId: Number(enrolledBatchId)
+                        }
+                    });
+                }
+
+                // If user is a lecturer, create LecturerModule records
+                if (role === 3 && assignedModuleIds?.length > 0) { // 3 is LECTURER role
+                    await tx.lecturerModule.createMany({
+                        data: assignedModuleIds.map(moduleId => ({
+                            userId: newUser.id,
+                            moduleId: Number(moduleId)
+                        }))
+                    });
+                }
 
                 // Set custom claims for user
                 await auth.setCustomUserClaims(firebaseUser.uid, {
@@ -72,7 +174,7 @@ class User {
                 return newUser;
             });
 
-            return new User(user);
+            return User.getUserById(user.id);
         } catch (error) {
             // If Firebase user was created but database insert failed, delete the Firebase user
             if (error.code !== 'auth/email-already-exists' && firebaseUser?.uid) {
@@ -90,14 +192,15 @@ class User {
         }
     }
 
-    static async updateUser({ id, firstName, lastName, role }) {
+    static async updateUser({ id, firstName, lastName, role, departmentId }) {
         const user = await prisma.$transaction(async (tx) => {
             const updatedUser = await tx.user.update({
                 where: { id: Number(id) },
                 data: {
                     firstName,
                     lastName,
-                    role: role !== undefined ? Number(role) : undefined
+                    role: role !== undefined ? Number(role) : undefined,
+                    departmentId: departmentId !== undefined ? Number(departmentId) : undefined
                 }
             });
 
@@ -117,7 +220,7 @@ class User {
             return updatedUser;
         });
 
-        return new User(user);
+        return User.getUserById(user.id);
     }
 
     static async deleteUser(id) {

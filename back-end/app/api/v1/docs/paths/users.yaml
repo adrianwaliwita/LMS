@@ -3,13 +3,28 @@
     tags:
       - Users
     summary: List all users
-    description: Retrieve a list of all users. Can be filtered by role and email.
+    description: >
+      Retrieve a list of all users. Can be filtered by:
+      * Role
+      * Email (partial match)
+      
+      The response includes:
+      * Department details
+      * For STUDENT role (4): enrolled batch details
+      * For LECTURER role (3): assigned module details
     parameters:
       - in: query
         name: role
         schema:
           type: integer
-        description: Filter users by role
+          enum: [0, 1, 2, 3, 4]
+        description: >
+          Filter users by role:
+          * 0 - TERMINATED
+          * 1 - ADMIN
+          * 2 - COORDINATOR
+          * 3 - LECTURER
+          * 4 - STUDENT
       - in: query
         name: email
         schema:
@@ -17,7 +32,7 @@
         description: Filter users by email (partial match)
     responses:
       200:
-        description: List of users
+        description: List of users retrieved successfully
         content:
           application/json:
             schema:
@@ -25,7 +40,7 @@
               items:
                 $ref: '#/components/schemas/User'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -35,7 +50,14 @@
     tags:
       - Users
     summary: Create a new user
-    description: Create a new user with the provided details
+    description: >
+      Create a new user with the provided details. Some fields are required based on the user's role:
+      * For STUDENT (role 4): enrolledBatchId is required
+      * For LECTURER (role 3): assignedModuleIds is required
+      * For all roles: departmentId is required
+      
+      A secure random password will be generated and sent to the user's email.
+      The user will be created in both the database and Firebase Authentication.
     requestBody:
       required: true
       content:
@@ -44,18 +66,15 @@
             type: object
             required:
               - email
-              - password
               - firstName
               - lastName
               - role
+              - departmentId
             properties:
               email:
                 type: string
                 format: email
                 description: User's email address
-              password:
-                type: string
-                description: User's password (min 6 characters)
               firstName:
                 type: string
                 description: User's first name
@@ -64,13 +83,24 @@
                 description: User's last name
               role:
                 type: integer
+                enum: [1, 2, 3, 4]
                 description: >
                   User role:
-                  * 0 - Terminated
-                  * 1 - Admin
-                  * 2 - Coordinator
-                  * 3 - Lecturer
-                  * 4 - Student
+                  * 1 - ADMIN
+                  * 2 - COORDINATOR
+                  * 3 - LECTURER
+                  * 4 - STUDENT
+              departmentId:
+                type: integer
+                description: ID of the department the user belongs to
+              enrolledBatchId:
+                type: integer
+                description: Required only for STUDENT role (4) - ID of the batch the student is enrolled in
+              assignedModuleIds:
+                type: array
+                items:
+                  type: integer
+                description: Required only for LECTURER role (3) - IDs of the modules assigned to the lecturer
     responses:
       201:
         description: User created successfully
@@ -79,40 +109,54 @@
             schema:
               $ref: '#/components/schemas/User'
       400:
-        description: Missing required fields or invalid data
+        description: >
+          Invalid input. Possible reasons:
+          * Missing required fields
+          * Invalid email format
+          * Invalid role value
+          * Invalid department ID
+          * Missing enrolledBatchId for student role
+          * Missing or empty assignedModuleIds for lecturer role
+          * Invalid module IDs
+          * Referenced batch/department/modules do not exist
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
       409:
-        description: Email already exists
+        description: Email already exists in Firebase Authentication
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
 
 /users/{id}:
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: User ID
+
   get:
     tags:
       - Users
-    summary: Get a user by ID
-    description: Retrieve a single user by their ID
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: User ID
+    summary: Get user by ID
+    description: >
+      Retrieve user details by ID. The response includes:
+      * Department details
+      * For STUDENT role (4): enrolled batch details
+      * For LECTURER role (3): assigned module details
     responses:
       200:
-        description: User found
+        description: User details retrieved successfully
         content:
           application/json:
             schema:
@@ -124,7 +168,7 @@
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -133,15 +177,13 @@
   patch:
     tags:
       - Users
-    summary: Update a user
-    description: Update a user's details
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: User ID
+    summary: Update user
+    description: >
+      Update user details by ID. Note that:
+      * At least one field must be provided
+      * Email cannot be updated (managed by Firebase)
+      * Role changes will update Firebase custom claims and revoke refresh tokens
+      * Student batch and lecturer module assignments must be managed through separate endpoints
     requestBody:
       required: true
       content:
@@ -157,13 +199,17 @@
                 description: User's last name
               role:
                 type: integer
+                enum: [0, 1, 2, 3, 4]
                 description: >
                   User role:
-                  * 0 - Terminated
-                  * 1 - Admin
-                  * 2 - Coordinator
-                  * 3 - Lecturer
-                  * 4 - Student
+                  * 0 - TERMINATED
+                  * 1 - ADMIN
+                  * 2 - COORDINATOR
+                  * 3 - LECTURER
+                  * 4 - STUDENT
+              departmentId:
+                type: integer
+                description: ID of the department to transfer the user to
     responses:
       200:
         description: User updated successfully
@@ -171,6 +217,18 @@
           application/json:
             schema:
               $ref: '#/components/schemas/User'
+      400:
+        description: >
+          Invalid input. Possible reasons:
+          * No fields provided for update
+          * Empty name fields
+          * Invalid role value
+          * Invalid department ID
+          * Referenced department does not exist
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
       404:
         description: User not found
         content:
@@ -178,7 +236,7 @@
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -187,15 +245,12 @@
   delete:
     tags:
       - Users
-    summary: Delete a user
-    description: Delete a user by their ID
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: User ID
+    summary: Delete user
+    description: >
+      Delete user by ID. This will:
+      * Delete the user from the database
+      * Delete the user from Firebase Authentication
+      * Remove all related records (student batch, lecturer modules)
     responses:
       204:
         description: User deleted successfully
@@ -206,7 +261,7 @@
             schema:
               $ref: '#/components/schemas/Error'
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:

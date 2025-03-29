@@ -25,10 +25,10 @@ export const getCourseById = async (req, res) => {
 };
 
 export const listCourses = async (req, res) => {
-    const { title, category, level } = req.query;
+    const { title, category, level, departmentId } = req.query;
 
     try {
-        const courses = await Course.getAllCourses({ title, category, level });
+        const courses = await Course.getAllCourses({ title, category, level, departmentId });
 
         res.json(courses);
     } catch (error) {
@@ -41,13 +41,13 @@ export const listCourses = async (req, res) => {
 };
 
 export const createCourse = async (req, res) => {
-    const { title, description, category, level, price, moduleIds = [] } = req.body;
+    const { title, description, category, level, price, moduleIds = [], departmentId } = req.body;
 
     // Validate required fields
-    if (!title || !description || category === undefined || level === undefined || price === undefined) {
+    if (!title || !description || category === undefined || level === undefined || price === undefined || !departmentId) {
         return res.status(400).json({
             error: 'Missing required fields',
-            message: 'title, description, category, level, and price are required'
+            message: 'title, description, category, level, price, and departmentId are required'
         });
     }
 
@@ -64,6 +64,14 @@ export const createCourse = async (req, res) => {
         return res.status(400).json({
             error: 'Invalid price',
             message: 'price must be a non-negative number'
+        });
+    }
+
+    // Validate departmentId
+    if (!Number.isInteger(Number(departmentId)) || Number(departmentId) <= 0) {
+        return res.status(400).json({
+            error: 'Invalid department ID',
+            message: 'departmentId must be a positive integer'
         });
     }
 
@@ -108,6 +116,7 @@ export const createCourse = async (req, res) => {
             category,
             level,
             price,
+            departmentId,
             moduleIds
         });
 
@@ -118,6 +127,13 @@ export const createCourse = async (req, res) => {
             return res.status(409).json({
                 error: 'Duplicate title',
                 message: 'A course with this title already exists'
+            });
+        }
+
+        if (error.code === 'P2003' && error.meta?.field_name === 'department_id') {
+            return res.status(400).json({
+                error: 'Invalid department',
+                message: 'The specified department does not exist'
             });
         }
 
@@ -138,13 +154,14 @@ export const createCourse = async (req, res) => {
 
 export const updateCourse = async (req, res) => {
     const { id } = req.params;
-    const { title, description, category, level, price, moduleIds } = req.body;
+    const { title, description, category, level, price, moduleIds, departmentId } = req.body;
 
     // Validate that at least one field is provided for update
-    if (!title && !description && category === undefined && level === undefined && price === undefined && !moduleIds) {
+    if (!title && !description && category === undefined && level === undefined && 
+        price === undefined && moduleIds === undefined && departmentId === undefined) {
         return res.status(400).json({
             error: 'Missing fields',
-            message: 'At least one field (title, description, category, level, price, or moduleIds) must be provided for update'
+            message: 'At least one field (title, description, category, level, price, moduleIds, or departmentId) must be provided for update'
         });
     }
 
@@ -205,6 +222,16 @@ export const updateCourse = async (req, res) => {
         }
     }
 
+    // Validate departmentId if provided
+    if (departmentId !== undefined) {
+        if (!Number.isInteger(Number(departmentId)) || Number(departmentId) <= 0) {
+            return res.status(400).json({
+                error: 'Invalid department ID',
+                message: 'departmentId must be a positive integer'
+            });
+        }
+    }
+
     try {
         const course = await Course.updateCourse({
             id: Number(id),
@@ -213,6 +240,7 @@ export const updateCourse = async (req, res) => {
             category,
             level,
             price,
+            departmentId,
             moduleIds
         });
 
@@ -230,6 +258,13 @@ export const updateCourse = async (req, res) => {
             return res.status(409).json({
                 error: 'Title already exists',
                 message: 'A course with this title already exists'
+            });
+        }
+
+        if (error.code === 'P2003' && error.meta?.field_name === 'department_id') {
+            return res.status(400).json({
+                error: 'Invalid department',
+                message: 'The specified department does not exist'
             });
         }
 
