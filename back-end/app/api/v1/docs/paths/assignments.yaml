@@ -1,0 +1,356 @@
+assignments:
+  get:
+    tags:
+      - Assignments
+    summary: List assignments
+    description: Retrieve a list of assignments filtered by batch or module. At least one filter must be provided.
+    parameters:
+      - name: batchId
+        in: query
+        description: Filter assignments by batch ID
+        schema:
+          type: integer
+      - name: moduleId
+        in: query
+        description: Filter assignments by module ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: List of assignments matching the filters
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../openapi.yaml#/components/schemas/Assignment'
+      '400':
+        description: No filters provided or invalid filter values
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  
+  post:
+    tags:
+      - Assignments
+    summary: Create a new assignment
+    description: Create a new assignment for a specific batch and module
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - batchId
+              - moduleId
+              - title
+              - description
+              - dueDate
+            properties:
+              batchId:
+                type: integer
+                description: ID of the batch this assignment belongs to
+              moduleId:
+                type: integer
+                description: ID of the module this assignment belongs to
+              title:
+                type: string
+                description: Assignment title (must be unique within batch and module)
+              description:
+                type: string
+                description: Assignment description
+              dueDate:
+                type: string
+                format: date-time
+                description: Due date for submissions (must be in the future)
+    responses:
+      '201':
+        description: Assignment created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Assignment'
+      '400':
+        description: Missing required fields, invalid input, or invalid due date
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: Assignment with this title already exists for this batch and module
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{id}:
+  get:
+    tags:
+      - Assignments
+    summary: Get assignment details
+    description: Retrieve details of a specific assignment by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Assignment details retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Assignment'
+      '404':
+        description: Assignment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{id}/upload-brief:
+  post:
+    tags:
+      - Assignments
+    summary: Upload assignment brief
+    description: Upload a brief file for a specific assignment. Only PDF, Word documents and ZIP files are allowed (max 5MB).
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - file
+            properties:
+              file:
+                type: string
+                format: binary
+                description: Brief file (PDF, DOC, DOCX, or ZIP)
+    responses:
+      '200':
+        description: Brief uploaded successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Assignment'
+      '400':
+        description: Missing file, invalid file type, or file too large
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Assignment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{id}/download-brief:
+  get:
+    tags:
+      - Assignments
+    summary: Download assignment brief
+    description: Download the brief file for a specific assignment
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Brief file downloaded successfully
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      '404':
+        description: Assignment not found or brief not uploaded
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{id}/make-submission:
+  post:
+    tags:
+      - Assignment Submissions
+    summary: Submit assignment
+    description: Submit a solution file for a specific assignment. Only PDF, Word documents and ZIP files are allowed (max 5MB).
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - file
+            properties:
+              file:
+                type: string
+                format: binary
+                description: Submission file (PDF, DOC, DOCX, or ZIP)
+    responses:
+      '201':
+        description: Assignment submitted successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/AssignmentSubmission'
+      '400':
+        description: Missing file, invalid file type, file too large, or submission after due date
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Assignment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: Student has already submitted this assignment
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{id}/submissions:
+  get:
+    tags:
+      - Assignment Submissions
+    summary: List assignment submissions
+    description: Retrieve a list of all submissions for a specific assignment
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: List of submissions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../openapi.yaml#/components/schemas/AssignmentSubmission'
+      '404':
+        description: Assignment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+assignments/{assignmentId}/submissions/{submissionId}/download:
+  get:
+    tags:
+      - Assignment Submissions
+    summary: Download submission file
+    description: Download a specific submission file. Students can only download their own submissions, while staff members can download any submission.
+    parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        description: Assignment ID
+        schema:
+          type: integer
+      - name: submissionId
+        in: path
+        required: true
+        description: Submission ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Submission file downloaded successfully
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      '403':
+        description: Unauthorized access to submission
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Assignment or submission not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error' 

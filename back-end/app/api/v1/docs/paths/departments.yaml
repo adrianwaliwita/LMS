@@ -1,26 +1,26 @@
-/modules:
+/departments:
   get:
     tags:
-      - Modules
-    summary: List all modules
+      - Departments
+    summary: List all departments
     description: >
-      Retrieve a list of all modules.
-      Can be filtered by title using partial match.
+      Retrieve a list of all departments.
+      Can be filtered by name using partial match.
     parameters:
-      - name: title
+      - name: name
         in: query
         schema:
           type: string
-        description: Filter modules by title (partial match)
+        description: Filter departments by name (partial match)
     responses:
       200:
-        description: List of modules retrieved successfully
+        description: List of departments retrieved successfully
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/Module'
+                $ref: '#/components/schemas/Department'
       500:
         description: Internal server error
         content:
@@ -30,11 +30,12 @@
 
   post:
     tags:
-      - Modules
-    summary: Create a new module
+      - Departments
+    summary: Create a new department
     description: >
-      Create a new module with a unique title.
-      Both title and description are required and must not be empty.
+      Create a new department with a unique name.
+      Both name and description are required and must not be empty strings.
+      Leading and trailing whitespace will be trimmed.
     requestBody:
       required: true
       content:
@@ -42,40 +43,46 @@
           schema:
             type: object
             required:
-              - title
+              - name
               - description
             properties:
-              title:
+              name:
                 type: string
-                description: Title of the module (must be unique)
+                description: Name of the department (must be unique, will be trimmed)
               description:
                 type: string
-                description: Description of the module
+                description: Description of the department (will be trimmed)
     responses:
       201:
-        description: Module created successfully
+        description: Department created successfully
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Module'
+              $ref: '#/components/schemas/Department'
       400:
         description: Invalid input
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Missing required fields"
-              message: "title and description are required"
+            examples:
+              missingFields:
+                value:
+                  error: "Missing required fields"
+                  message: "name and description are required"
+              emptyField:
+                value:
+                  error: "Invalid input"
+                  message: "name/description cannot be empty"
       409:
-        description: Module title already exists
+        description: Department name already exists
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
             example:
-              error: "Title already exists"
-              message: "A module with this title already exists"
+              error: "Department name already exists"
+              message: "A department with this name already exists"
       500:
         description: Internal server error
         content:
@@ -83,36 +90,36 @@
             schema:
               $ref: '#/components/schemas/Error'
 
-/modules/{id}:
+/departments/{id}:
   parameters:
     - in: path
       name: id
       required: true
       schema:
         type: integer
-      description: Module ID
+      description: Department ID
 
   get:
     tags:
-      - Modules
-    summary: Get module by ID
-    description: Retrieve a single module by its ID
+      - Departments
+    summary: Get department by ID
+    description: Retrieve a single department by its ID
     responses:
       200:
-        description: Module found
+        description: Department found
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Module'
+              $ref: '#/components/schemas/Department'
       404:
-        description: Module not found
+        description: Department not found
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              ref: '#/components/schemas/Error'
             example:
-              error: "Module not found"
-              message: "No module found with the provided ID"
+              error: "Department not found"
+              message: "No department found with the provided ID"
       500:
         description: Internal server error
         content:
@@ -122,12 +129,13 @@
 
   patch:
     tags:
-      - Modules
-    summary: Update module
+      - Departments
+    summary: Update department
     description: >
-      Update a module's details.
+      Update a department's details.
       At least one field must be provided.
-      Fields cannot be empty when provided.
+      Fields cannot be empty strings when provided.
+      Leading and trailing whitespace will be trimmed.
     requestBody:
       required: true
       content:
@@ -136,19 +144,19 @@
             type: object
             minProperties: 1
             properties:
-              title:
+              name:
                 type: string
-                description: New title for the module (must be unique)
+                description: New name for the department (must be unique, will be trimmed)
               description:
                 type: string
-                description: New description for the module
+                description: New description for the department (will be trimmed)
     responses:
       200:
-        description: Module updated successfully
+        description: Department updated successfully
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Module'
+              $ref: '#/components/schemas/Department'
       400:
         description: Invalid input
         content:
@@ -159,29 +167,29 @@
               noFields:
                 value:
                   error: "Missing fields"
-                  message: "At least one field (title, description) must be provided for update"
+                  message: "At least one field (name or description) must be provided for update"
               emptyField:
                 value:
                   error: "Invalid input"
-                  message: "title/description cannot be empty"
+                  message: "name/description cannot be empty"
       404:
-        description: Module not found
+        description: Department not found
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
             example:
-              error: "Module not found"
-              message: "No module found with the provided ID"
+              error: "Department not found"
+              message: "No department found with the provided ID"
       409:
-        description: Module title already exists
+        description: Department name already exists
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
             example:
-              error: "Title already exists"
-              message: "A module with this title already exists"
+              error: "Department name already exists"
+              message: "A department with this name already exists"
       500:
         description: Internal server error
         content:
@@ -191,21 +199,21 @@
 
   delete:
     tags:
-      - Modules
-    summary: Delete module
-    description: Delete a module by its ID
+      - Departments
+    summary: Delete department
+    description: Delete a department by its ID
     responses:
       204:
-        description: Module deleted successfully
+        description: Department deleted successfully
       404:
-        description: Module not found
+        description: Department not found
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
             example:
-              error: "Module not found"
-              message: "No module found with the provided ID"
+              error: "Department not found"
+              message: "No department found with the provided ID"
       500:
         description: Internal server error
         content:

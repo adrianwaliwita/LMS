@@ -1,0 +1,200 @@
+equipment:
+  get:
+    tags:
+      - Equipment
+    summary: List equipment
+    description: Retrieve a list of all equipment with optional name filtering
+    parameters:
+      - name: name
+        in: query
+        description: Filter equipment by name (partial match)
+        schema:
+          type: string
+    responses:
+      '200':
+        description: List of equipment
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../openapi.yaml#/components/schemas/Equipment'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  
+  post:
+    summary: Create new equipment
+    description: Create a new equipment item with a unique name
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+              - description
+              - quantity
+            properties:
+              name:
+                type: string
+                description: Equipment name (must be unique)
+              description:
+                type: string
+                description: Equipment description
+              quantity:
+                type: integer
+                description: Equipment quantity (must be non-negative)
+                minimum: 0
+    responses:
+      '201':
+        description: Equipment created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Equipment'
+      '400':
+        description: Missing required fields, empty name/description, or invalid quantity
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: Equipment name already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+equipment/{id}:
+  get:
+    tags:
+      - Equipment
+    summary: Get equipment details
+    description: Retrieve details of a specific equipment item by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Equipment ID
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Equipment details retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Equipment'
+      '404':
+        description: Equipment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+  patch:
+    tags:
+      - Equipment
+    summary: Update equipment details
+    description: Update details of a specific equipment item. At least one field must be provided.
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Equipment ID
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            properties:
+              name:
+                type: string
+                description: New equipment name (must be unique)
+              description:
+                type: string
+                description: New equipment description
+              quantity:
+                type: integer
+                description: New equipment quantity (must be non-negative)
+                minimum: 0
+    responses:
+      '200':
+        description: Equipment updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Equipment'
+      '400':
+        description: No fields provided, empty name/description, or invalid quantity
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Equipment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '409':
+        description: New equipment name already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+  delete:
+    tags:
+      - Equipment
+    summary: Delete equipment
+    description: Delete a specific equipment item by ID
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Equipment ID
+        schema:
+          type: integer
+    responses:
+      '204':
+        description: Equipment deleted successfully
+      '404':
+        description: Equipment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error' 

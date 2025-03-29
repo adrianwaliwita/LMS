@@ -28,15 +28,44 @@ components:
           type: string
           description: Human readable error message
 
+    Department:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Department ID
+        name:
+          type: string
+          description: Department name (unique)
+        description:
+          type: string
+          description: Department description
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
     User:
       type: object
+      required:
+        - id
+        - firebaseUid
+        - firstName
+        - lastName
+        - email
+        - role
+        - departmentId
       properties:
         id:
           type: integer
           description: User ID
         firebaseUid:
           type: string
-          description: Firebase User ID
+          description: Firebase User ID (unique)
         firstName:
           type: string
           description: User's first name
@@ -46,16 +75,38 @@ components:
         email:
           type: string
           format: email
-          description: User's email address
+          description: User's email address (unique)
         role:
           type: integer
+          enum: [0, 1, 2, 3, 4]
           description: >
             User role:
-            * 0 - Terminated
-            * 1 - Admin
-            * 2 - Coordinator
-            * 3 - Lecturer
-            * 4 - Student
+            * 0 - TERMINATED
+            * 1 - ADMIN
+            * 2 - COORDINATOR
+            * 3 - LECTURER
+            * 4 - STUDENT
+        roleName:
+          type: string
+          enum: [TERMINATED, ADMIN, COORDINATOR, LECTURER, STUDENT]
+          description: String representation of the user role
+        departmentId:
+          type: integer
+          description: ID of the department the user belongs to
+        department:
+          $ref: '#/components/schemas/Department'
+        enrolledBatch:
+          type: object
+          description: Only for STUDENT role (4) - Details of the batch the student is enrolled in
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Batch'
+        assignedModules:
+          type: array
+          description: Only for LECTURER role (3) - List of modules assigned to the lecturer
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Module'
         createdAt:
           type: string
           format: date-time
@@ -67,18 +118,27 @@ components:
 
     Course:
       type: object
+      required:
+        - id
+        - title
+        - description
+        - category
+        - level
+        - price
+        - departmentId
       properties:
         id:
           type: integer
           description: Course ID
         title:
           type: string
-          description: Course title
+          description: Course title (unique)
         description:
           type: string
           description: Course description
         category:
           type: integer
+          enum: [1, 2, 3, 4, 5]
           description: >
             Course category:
             * 1 - IT
@@ -86,20 +146,35 @@ components:
             * 3 - Engineering
             * 4 - Science
             * 5 - Art
+        categoryName:
+          type: string
+          enum: [IT, Business, Engineering, Science, Art]
+          description: String representation of the course category
         level:
           type: integer
+          enum: [1, 2, 3]
           description: >
             Course level:
             * 1 - Diploma
             * 2 - Undergraduate
             * 3 - Postgraduate
+        levelName:
+          type: string
+          enum: [Diploma, Undergraduate, Postgraduate]
+          description: String representation of the course level
         price:
           type: number
           format: float
-          description: Course price
+          minimum: 0
+          description: Course price (must be non-negative)
+        departmentId:
+          type: integer
+          description: ID of the department this course belongs to
+        department:
+          $ref: '#/components/schemas/Department'
         modules:
           type: array
-          description: List of associated modules
+          description: List of modules associated with this course
           items:
             $ref: '#/components/schemas/Module'
         createdAt:
@@ -113,16 +188,30 @@ components:
 
     Module:
       type: object
+      required:
+        - id
+        - title
+        - description
       properties:
         id:
           type: integer
           description: Module ID
         title:
           type: string
-          description: Module title
+          description: Module title (unique)
         description:
           type: string
           description: Module description
+        courses:
+          type: array
+          description: List of courses this module is part of
+          items:
+            $ref: '#/components/schemas/Course'
+        lecturers:
+          type: array
+          description: List of lecturers assigned to this module
+          items:
+            $ref: '#/components/schemas/User'
         createdAt:
           type: string
           format: date-time
@@ -134,6 +223,12 @@ components:
 
     Batch:
       type: object
+      required:
+        - id
+        - courseId
+        - name
+        - startDate
+        - endDate
       properties:
         id:
           type: integer
@@ -143,7 +238,7 @@ components:
           description: ID of the course this batch belongs to
         name:
           type: string
-          description: Name of the batch
+          description: Name of the batch (unique within course)
         startDate:
           type: string
           format: date-time
@@ -156,10 +251,17 @@ components:
           type: string
           enum: [UPCOMING, ONGOING, COMPLETED]
           description: >
-            Current status of the batch:
+            Current status of the batch (calculated based on dates):
             * UPCOMING - Current date < startDate
             * ONGOING - startDate <= Current date < endDate
             * COMPLETED - Current date >= endDate
+        course:
+          $ref: '#/components/schemas/Course'
+        students:
+          type: array
+          description: List of students enrolled in this batch
+          items:
+            $ref: '#/components/schemas/User'
         createdAt:
           type: string
           format: date-time
@@ -168,8 +270,183 @@ components:
           type: string
           format: date-time
           description: Last update timestamp
-        course:
-          $ref: '#/components/schemas/Course'
+
+    Assignment:
+      type: object
+      required:
+        - id
+        - batchId
+        - moduleId
+        - title
+        - description
+        - dueDate
+        - createdBy
+      properties:
+        id:
+          type: integer
+          description: Assignment ID
+        batchId:
+          type: integer
+          description: ID of the batch this assignment belongs to
+        moduleId:
+          type: integer
+          description: ID of the module this assignment belongs to
+        title:
+          type: string
+          description: Assignment title (unique within batch and module)
+        description:
+          type: string
+          description: Assignment description
+        briefFileName:
+          type: string
+          nullable: true
+          description: Name of the uploaded brief file
+        isBriefUploaded:
+          type: boolean
+          description: Whether a brief has been uploaded for this assignment
+        dueDate:
+          type: string
+          format: date-time
+          description: Due date for submissions (must be in the future when creating)
+        batch:
+          $ref: '#/components/schemas/Batch'
+        module:
+          $ref: '#/components/schemas/Module'
+        creator:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    AssignmentSubmission:
+      type: object
+      required:
+        - id
+        - assignmentId
+        - studentId
+        - fileName
+      properties:
+        id:
+          type: integer
+          description: Submission ID
+        assignmentId:
+          type: integer
+          description: ID of the assignment this submission is for
+        studentId:
+          type: integer
+          description: ID of the student who made the submission
+        fileName:
+          type: string
+          description: Name of the uploaded submission file
+        assignment:
+          $ref: '#/components/schemas/Assignment'
+        student:
+          $ref: '#/components/schemas/User'
+        createdAt:
+          type: string
+          format: date-time
+          description: Submission timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Classroom:
+      type: object
+      required:
+        - id
+        - name
+        - capacity
+      properties:
+        id:
+          type: integer
+          description: Classroom ID
+        name:
+          type: string
+          description: Classroom name (unique)
+        capacity:
+          type: integer
+          description: Classroom capacity (must be positive)
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    Equipment:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - quantity
+      properties:
+        id:
+          type: integer
+          description: Equipment ID
+        name:
+          type: string
+          description: Equipment name (unique)
+        description:
+          type: string
+          description: Equipment description
+        quantity:
+          type: integer
+          description: Equipment quantity (must be non-negative)
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+paths:
+  /departments:
+    $ref: './paths/departments.yaml#/departments'
+  /departments/{id}:
+    $ref: './paths/departments.yaml#/departments/{id}'
+  /modules:
+    $ref: './paths/modules.yaml#/modules'
+  /modules/{id}:
+    $ref: './paths/modules.yaml#/modules/{id}'
+  /batches:
+    $ref: './paths/batches.yaml#/batches'
+  /batches/{id}:
+    $ref: './paths/batches.yaml#/batches/{id}'
+  /assignments:
+    $ref: './paths/assignments.yaml#/assignments'
+  /assignments/{id}:
+    $ref: './paths/assignments.yaml#/assignments/{id}'
+  /assignments/{id}/upload-brief:
+    $ref: './paths/assignments.yaml#/assignments/{id}/upload-brief'
+  /assignments/{id}/download-brief:
+    $ref: './paths/assignments.yaml#/assignments/{id}/download-brief'
+  /assignments/{id}/make-submission:
+    $ref: './paths/assignments.yaml#/assignments/{id}/make-submission'
+  /assignments/{id}/submissions:
+    $ref: './paths/assignments.yaml#/assignments/{id}/submissions'
+  /assignments/{assignmentId}/submissions/{submissionId}/download:
+    $ref: './paths/assignments.yaml#/assignments/{assignmentId}/submissions/{submissionId}/download'
+  /classrooms:
+    $ref: './paths/classrooms.yaml#/classrooms'
+  /classrooms/{id}:
+    $ref: './paths/classrooms.yaml#/classrooms/{id}'
+  /equipment:
+    $ref: './paths/equipment.yaml#/equipment'
+  /equipment/{id}:
+    $ref: './paths/equipment.yaml#/equipment/{id}'
 
 security:
   - BearerAuth: [] 

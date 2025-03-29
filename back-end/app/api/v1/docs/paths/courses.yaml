@@ -3,38 +3,52 @@
     tags:
       - Courses
     summary: List all courses
-    description: Retrieve a list of all courses with optional filters
+    description: >
+      Retrieve a list of all courses. Can be filtered by:
+      * Title (partial match)
+      * Category
+      * Level
+      * Department ID
+      
+      The response includes:
+      * Department details
+      * Associated modules
     parameters:
-      - name: title
-        in: query
+      - in: query
+        name: title
         schema:
           type: string
         description: Filter courses by title (partial match)
-      - name: category
-        in: query
+      - in: query
+        name: category
         schema:
           type: integer
           enum: [1, 2, 3, 4, 5]
         description: >
-          Course category:
+          Filter courses by category:
           * 1 - IT
           * 2 - Business
           * 3 - Engineering
           * 4 - Science
           * 5 - Art
-      - name: level
-        in: query
+      - in: query
+        name: level
         schema:
           type: integer
           enum: [1, 2, 3]
         description: >
-          Course level:
+          Filter courses by level:
           * 1 - Diploma
           * 2 - Undergraduate
           * 3 - Postgraduate
+      - in: query
+        name: departmentId
+        schema:
+          type: integer
+        description: Filter courses by department ID
     responses:
       200:
-        description: A list of courses
+        description: List of courses retrieved successfully
         content:
           application/json:
             schema:
@@ -46,17 +60,13 @@
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                error:
-                  type: string
-                  example: Internal server error
+              $ref: '#/components/schemas/Error'
 
   post:
     tags:
       - Courses
     summary: Create a new course
-    description: Create a new course with optional module references. All string fields must not be empty after trimming. Price must be a non-negative number.
+    description: Create a new course with the provided details
     requestBody:
       required: true
       content:
@@ -69,15 +79,14 @@
               - category
               - level
               - price
+              - departmentId
             properties:
               title:
                 type: string
-                description: Course title (must be unique and non-empty)
-                minLength: 1
+                description: Course title (must be unique)
               description:
                 type: string
-                description: Course description (must be non-empty)
-                minLength: 1
+                description: Course description
               category:
                 type: integer
                 enum: [1, 2, 3, 4, 5]
@@ -101,12 +110,14 @@
                 format: float
                 minimum: 0
                 description: Course price (must be non-negative)
+              departmentId:
+                type: integer
+                description: ID of the department this course belongs to
               moduleIds:
                 type: array
-                description: Array of module IDs to associate with the course (optional)
                 items:
                   type: integer
-                  minimum: 1
+                description: Array of module IDs to associate with the course (optional)
     responses:
       201:
         description: Course created successfully
@@ -115,69 +126,53 @@
             schema:
               $ref: '#/components/schemas/Course'
       400:
-        description: Invalid input
+        description: >
+          Invalid input. Possible reasons:
+          * Missing required fields
+          * Empty title or description
+          * Invalid price (negative)
+          * Invalid department ID
+          * Invalid category value
+          * Invalid level value
+          * Invalid moduleIds format
+          * Referenced department/modules do not exist
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            examples:
-              missingFields:
-                value:
-                  error: "Missing required fields"
-                  message: "title, description, category, level, and price are required"
-              invalidInput:
-                value:
-                  error: "Invalid input"
-                  message: "title and description cannot be empty"
-              invalidPrice:
-                value:
-                  error: "Invalid price"
-                  message: "price must be a non-negative number"
-              invalidCategory:
-                value:
-                  error: "Invalid category"
-                  message: "category must be one of: 1 (IT), 2 (Business), 3 (Engineering), 4 (Science), 5 (Art)"
-              invalidLevel:
-                value:
-                  error: "Invalid level"
-                  message: "level must be one of: 1 (Diploma), 2 (Undergraduate), 3 (Postgraduate)"
-              invalidModuleIds:
-                value:
-                  error: "Invalid input"
-                  message: "moduleIds must be an array of positive numbers"
       409:
         description: Course title already exists
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Duplicate title"
-              message: "A course with this title already exists"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
 
 /courses/{id}:
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Course ID
+
   get:
     tags:
       - Courses
-    summary: Get a course by ID
-    description: Retrieve a single course by its ID, including associated modules
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-        description: Course ID
+    summary: Get course by ID
+    description: >
+      Retrieve course details by ID. The response includes:
+      * Department details
+      * Associated modules
     responses:
       200:
-        description: Course found
+        description: Course details retrieved successfully
         content:
           application/json:
             schema:
@@ -188,11 +183,8 @@
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Course not found"
-              message: "No course found with the provided ID"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -201,37 +193,28 @@
   patch:
     tags:
       - Courses
-    summary: Update a course
-    description: Update a course's details. At least one field must be provided. String fields must not be empty if provided.
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-        description: Course ID
+    summary: Update course
+    description: >
+      Update course details by ID. At least one field must be provided.
+      When moduleIds is provided, it replaces all existing module associations.
     requestBody:
       required: true
       content:
         application/json:
           schema:
             type: object
-            minProperties: 1
             properties:
               title:
                 type: string
-                description: Course title (must be unique and non-empty if provided)
-                minLength: 1
+                description: New course title (must be unique)
               description:
                 type: string
-                description: Course description (must be non-empty if provided)
-                minLength: 1
+                description: New course description
               category:
                 type: integer
                 enum: [1, 2, 3, 4, 5]
                 description: >
-                  Course category:
+                  New course category:
                   * 1 - IT
                   * 2 - Business
                   * 3 - Engineering
@@ -241,7 +224,7 @@
                 type: integer
                 enum: [1, 2, 3]
                 description: >
-                  Course level:
+                  New course level:
                   * 1 - Diploma
                   * 2 - Undergraduate
                   * 3 - Postgraduate
@@ -249,13 +232,15 @@
                 type: number
                 format: float
                 minimum: 0
-                description: Course price (must be non-negative if provided)
+                description: New course price (must be non-negative)
+              departmentId:
+                type: integer
+                description: ID of the new department to transfer the course to
               moduleIds:
                 type: array
-                description: Array of module IDs to associate with the course (replaces existing associations)
                 items:
                   type: integer
-                  minimum: 1
+                description: New array of module IDs (replaces existing associations)
     responses:
       200:
         description: Course updated successfully
@@ -264,56 +249,34 @@
             schema:
               $ref: '#/components/schemas/Course'
       400:
-        description: Invalid input
+        description: >
+          Invalid input. Possible reasons:
+          * No fields provided for update
+          * Empty title or description
+          * Invalid price (negative)
+          * Invalid department ID
+          * Invalid category value
+          * Invalid level value
+          * Invalid moduleIds format
+          * Referenced department/modules do not exist
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            examples:
-              noFields:
-                value:
-                  error: "Missing fields"
-                  message: "At least one field (title, description, category, level, price, or moduleIds) must be provided for update"
-              invalidInput:
-                value:
-                  error: "Invalid input"
-                  message: "title cannot be empty"
-              invalidCategory:
-                value:
-                  error: "Invalid category"
-                  message: "category must be one of: 1 (IT), 2 (Business), 3 (Engineering), 4 (Science), 5 (Art)"
-              invalidLevel:
-                value:
-                  error: "Invalid level"
-                  message: "level must be one of: 1 (Diploma), 2 (Undergraduate), 3 (Postgraduate)"
-              invalidPrice:
-                value:
-                  error: "Invalid price"
-                  message: "price must be a non-negative number"
-              invalidModuleIds:
-                value:
-                  error: "Invalid input"
-                  message: "moduleIds must be an array of positive numbers"
       404:
         description: Course not found
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Course not found"
-              message: "No course found with the provided ID"
       409:
         description: Course title already exists
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Title already exists"
-              message: "A course with this title already exists"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:
@@ -322,16 +285,8 @@
   delete:
     tags:
       - Courses
-    summary: Delete a course
-    description: Delete a course by its ID. This will also delete all associated course-module relationships.
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-          minimum: 1
-        description: Course ID
+    summary: Delete course
+    description: Delete course by ID
     responses:
       204:
         description: Course deleted successfully
@@ -341,11 +296,8 @@
           application/json:
             schema:
               $ref: '#/components/schemas/Error'
-            example:
-              error: "Course not found"
-              message: "No course found with the provided ID"
       500:
-        description: Server error
+        description: Internal server error
         content:
           application/json:
             schema:

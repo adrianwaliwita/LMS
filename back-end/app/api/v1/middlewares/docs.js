@@ -14,6 +14,11 @@ const authPaths = YAML.load(join(__dirname, '../docs/paths/auth.yaml'));
 const userPaths = YAML.load(join(__dirname, '../docs/paths/users.yaml'));
 const modulePaths = YAML.load(join(__dirname, '../docs/paths/modules.yaml'));
 const coursePaths = YAML.load(join(__dirname, '../docs/paths/courses.yaml'));
+const batchPaths = YAML.load(join(__dirname, '../docs/paths/batches.yaml'));
+const departmentPaths = YAML.load(join(__dirname, '../docs/paths/departments.yaml'));
+const assignmentPaths = YAML.load(join(__dirname, '../docs/paths/assignments.yaml'));
+const classroomPaths = YAML.load(join(__dirname, '../docs/paths/classrooms.yaml'));
+const equipmentPaths = YAML.load(join(__dirname, '../docs/paths/equipment.yaml'));
 
 // Merge all paths
 const spec = {
@@ -22,7 +27,12 @@ const spec = {
         ...authPaths,
         ...userPaths,
         ...modulePaths,
-        ...coursePaths
+        ...coursePaths,
+        ...batchPaths,
+        ...departmentPaths,
+        ...assignmentPaths,
+        ...classroomPaths,
+        ...equipmentPaths
     }
 };
 
