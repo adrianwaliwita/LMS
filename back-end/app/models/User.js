@@ -100,21 +100,21 @@ class User {
         
         // Ensure at least one of each type
         const password = [
-            uppercaseChars[crypto.randomInt(uppercaseChars.length)],
-            lowercaseChars[crypto.randomInt(lowercaseChars.length)],
-            numberChars[crypto.randomInt(numberChars.length)],
-            specialChars[crypto.randomInt(specialChars.length)]
+            uppercaseChars[Math.floor(Math.random() * uppercaseChars.length)],
+            lowercaseChars[Math.floor(Math.random() * lowercaseChars.length)],
+            numberChars[Math.floor(Math.random() * numberChars.length)],
+            specialChars[Math.floor(Math.random() * specialChars.length)]
         ];
         
         // Fill the rest with random characters from all types
         const allChars = uppercaseChars + lowercaseChars + numberChars + specialChars;
         for (let i = password.length; i < 12; i++) {
-            password.push(allChars[crypto.randomInt(allChars.length)]);
+            password.push(allChars[Math.floor(Math.random() * allChars.length)]);
         }
         
         // Shuffle the password array
         for (let i = password.length - 1; i > 0; i--) {
-            const j = crypto.randomInt(i + 1);
+            const j = Math.floor(Math.random() * (i + 1));
             [password[i], password[j]] = [password[j], password[i]];
         }
         
@@ -174,7 +174,7 @@ class User {
                 return newUser;
             });
 
-            return new User(user);
+            return User.getUserById(user.id);
         } catch (error) {
             // If Firebase user was created but database insert failed, delete the Firebase user
             if (error.code !== 'auth/email-already-exists' && firebaseUser?.uid) {
@@ -220,7 +220,7 @@ class User {
             return updatedUser;
         });
 
-        return new User(user);
+        return User.getUserById(user.id);
     }
 
     static async deleteUser(id) {
