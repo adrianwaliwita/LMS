@@ -73,6 +73,9 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto flex flex-col flex-grow p-4">
         {/* User Visualizations */}
+        <h3 className="text-lg font-semibold text-blue-700 mb-[-10px]">
+          Analytics
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <RoleVisualizations users={users} roleMap={roleMap} />
 
