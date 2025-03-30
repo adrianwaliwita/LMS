@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "./../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import apiClient from "./../api/apiClient";
+import apiClient from "../api/apiClient";
 
 const Profile = () => {
   const { user, updateUser } = useAuth();

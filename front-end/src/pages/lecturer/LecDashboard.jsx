@@ -6,8 +6,8 @@ import apiClient from "../../api/apiClient";
 import Announcements from "../../components/Announcements";
 import CourseCompletionVisualization from "../../components/visualizations/CourseCompletionVisualization";
 import RoleVisualizations from "../../components/visualizations/RoleVisualizations";
-import CourseDistributionVisualizations from "../../components/visualizations/CourseDistributionVisualizations";
-const AdminDashboard = () => {
+
+const LecDashboard = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -74,17 +74,9 @@ const AdminDashboard = () => {
       <div className="container mx-auto flex flex-col flex-grow p-4">
         {/* User Visualizations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <RoleVisualizations users={users} roleMap={roleMap} />
+          <AdminVisualizations users={users} roleMap={roleMap} />
 
-          <CourseCompletionVisualization
-            courses={courses}
-            modules={modules}
-            users={users}
-            batches={batches}
-          />
-        </div>
-        <div className="gap-4 pt-4">
-          <CourseDistributionVisualizations
+          <CourseVisualizations
             courses={courses}
             modules={modules}
             users={users}
@@ -129,4 +121,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default LecDashboard;

@@ -35,12 +35,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     2: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage Modules", path: "/manage-modules" },
       { name: "Manage Students", path: "/manage-students" }, //done
-      { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
+      { name: "Manage Assignments", path: "/manage-assignments" }, //show users who submitted the assignment
       {
-        name: "Manage Lecture Scheduling & Resources",
-        path: "/manage-lectures",
+        name: "Schedule Lectures",
+        path: "/schedule-lectures",
       }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the module, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
       { name: "Manage Announcements", path: "/manage-announcements" },
 
@@ -49,7 +48,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     3: [
       { name: "Home", path: "/dashboard" },
-      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
+      { name: "Class Schedules", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
       { name: "Profile Settings", path: `/profile` },
     ],
 

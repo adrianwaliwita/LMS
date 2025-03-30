@@ -7,12 +7,9 @@ import apiClient from "../../api/apiClient";
 const ModuleManagement = () => {
   const { user } = useAuth();
   const [modules, setModules] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [lecturers, setLecturers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCourse, setFilterCourse] = useState("all");
   const [selectedModule, setSelectedModule] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -20,22 +17,13 @@ const ModuleManagement = () => {
   const [moduleFormData, setModuleFormData] = useState({
     title: "",
     description: "",
-    courseIds: [],
-    lecturerIds: [],
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [modulesRes, coursesRes, lecturersRes] = await Promise.all([
-          apiClient.get("/modules"),
-          apiClient.get("/courses"),
-          apiClient.get("/users?role=3"), // Get only lecturers (role=3)
-        ]);
-
+        const modulesRes = await apiClient.get("/modules");
         setModules(modulesRes.data);
-        setCourses(coursesRes.data);
-        setLecturers(lecturersRes.data);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -57,51 +45,28 @@ const ModuleManagement = () => {
     }));
   };
 
-  const handleMultiSelectChange = (e) => {
-    const { name, options } = e.target;
-    const selectedValues = Array.from(options)
-      .filter((option) => option.selected)
-      .map((option) => option.value);
-
-    setModuleFormData((prev) => ({
-      ...prev,
-      [name]: selectedValues,
-    }));
-  };
-
-  const handleCreateModule = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiClient.post("/modules", moduleFormData);
-      setModules([...modules, response.data]);
+      if (isEditMode) {
+        const response = await apiClient.patch(
+          `/modules/${selectedModule.id}`,
+          moduleFormData
+        );
+        setModules(
+          modules.map((m) => (m.id === selectedModule.id ? response.data : m))
+        );
+        toast.success(`Module "${moduleFormData.title}" updated successfully`);
+      } else {
+        const response = await apiClient.post("/modules", moduleFormData);
+        setModules([...modules, response.data]);
+        toast.success(`Module "${moduleFormData.title}" created successfully`);
+      }
       resetForm();
-      toast.success(`Module ${moduleFormData.title} created successfully`);
     } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Failed to create module";
-      toast.error(errorMessage);
-    }
-  };
-
-  const handleUpdateModule = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await apiClient.patch(
-        `/modules/${selectedModule.id}`,
-        moduleFormData
-      );
-
-      const updatedModules = modules.map((module) =>
-        module.id === selectedModule.id ? response.data : module
-      );
-
-      setModules(updatedModules);
-      resetForm();
-      setSelectedModule(null);
-      toast.success(`Module ${moduleFormData.title} updated successfully`);
-    } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to update module";
+        error.response?.data?.message ||
+        `Failed to ${isEditMode ? "update" : "create"} module`;
       toast.error(errorMessage);
     }
   };
@@ -124,19 +89,16 @@ const ModuleManagement = () => {
     setModuleFormData({
       title: "",
       description: "",
-      courseIds: [],
-      lecturerIds: [],
     });
     setIsEditMode(false);
     setShowForm(false);
+    setSelectedModule(null);
   };
 
   const handleEditSetup = (module) => {
     setModuleFormData({
       title: module.title,
-      description: module.description,
-      courseIds: module.courses?.map((c) => c.id) || [],
-      lecturerIds: module.lecturers?.map((l) => l.id) || [],
+      description: module.description || "",
     });
     setSelectedModule(module);
     setIsEditMode(true);
@@ -144,19 +106,12 @@ const ModuleManagement = () => {
   };
 
   const filteredModules = modules.filter((module) => {
-    const matchesSearch =
+    return (
       module.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (module.description &&
-        module.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCourse =
-      filterCourse === "all" ||
-      module.courses?.some((course) => course.id.toString() === filterCourse);
-    return matchesSearch && matchesCourse;
+        module.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
   });
-
-  const getLecturerName = (lecturer) => {
-    return `${lecturer.firstName} ${lecturer.lastName}`;
-  };
 
   if (user?.role !== 1) {
     return (
@@ -197,30 +152,12 @@ const ModuleManagement = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full sm:w-1/2 p-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
               />
-              <div className="flex gap-2">
-                <select
-                  value={filterCourse}
-                  onChange={(e) => setFilterCourse(e.target.value)}
-                  className="px-3 py-2 border rounded-lg focus:border-blue-700 focus:outline-none"
-                >
-                  <option value="all">All Courses</option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.title}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => {
-                    resetForm();
-                    setShowForm(true);
-                    setIsEditMode(false);
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
-                  + Add Module
-                </button>
-              </div>
+              <button
+                onClick={() => setShowForm(true)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                + Add Module
+              </button>
             </div>
 
             {filteredModules.length === 0 ? (
@@ -240,26 +177,15 @@ const ModuleManagement = () => {
                     >
                       {module.title}
                     </h3>
-                    <p className="text-gray-700 mt-2">
-                      <span className="font-semibold">Courses:</span>{" "}
-                      {module.courses?.length > 0
-                        ? module.courses.map((c) => c.title).join(", ")
-                        : "Not assigned"}
+                    <p className="text-gray-700 mt-2 line-clamp-2">
+                      {module.description || "No description available"}
                     </p>
-                    <p className="text-gray-700">
-                      <span className="font-semibold">Lecturers:</span>{" "}
-                      {module.lecturers?.length > 0
-                        ? module.lecturers
-                            .map((l) => getLecturerName(l))
-                            .join(", ")
-                        : "Not assigned"}
-                    </p>
-                    <div className="mt-3">
+                    <div className="mt-3 flex justify-end">
                       <button
                         onClick={() => setSelectedModule(module)}
                         className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                       >
-                        Manage Module
+                        Manage
                       </button>
                     </div>
                   </div>
@@ -274,13 +200,10 @@ const ModuleManagement = () => {
             <h3 className="text-xl font-bold mb-4 text-blue-700">
               {isEditMode ? "Edit Module" : "Add New Module"}
             </h3>
-            <form
-              onSubmit={isEditMode ? handleUpdateModule : handleCreateModule}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title
+                  Title *
                 </label>
                 <input
                   type="text"
@@ -305,49 +228,7 @@ const ModuleManagement = () => {
                   placeholder="Module description"
                 ></textarea>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Associated Courses
-                </label>
-                <select
-                  multiple
-                  name="courseIds"
-                  value={moduleFormData.courseIds}
-                  onChange={handleMultiSelectChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none h-32"
-                >
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id}>
-                      {course.title}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hold Ctrl/Cmd to select multiple
-                </p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assigned Lecturers
-                </label>
-                <select
-                  multiple
-                  name="lecturerIds"
-                  value={moduleFormData.lecturerIds}
-                  onChange={handleMultiSelectChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none h-32"
-                >
-                  {lecturers.map((lecturer) => (
-                    <option key={lecturer.id} value={lecturer.id}>
-                      {getLecturerName(lecturer)} (
-                      {lecturer.department?.name || "Unknown"})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Hold Ctrl/Cmd to select multiple
-                </p>
-              </div>
+
               <div className="flex justify-end gap-4 mt-6">
                 <button
                   type="button"
@@ -380,84 +261,14 @@ const ModuleManagement = () => {
                 &times;
               </button>
             </div>
+
             <div className="space-y-4">
               <p>
                 <span className="font-semibold">Description:</span>{" "}
                 {selectedModule.description || "No description available"}
               </p>
-
-              <div>
-                <h3 className="font-semibold mb-2">Courses</h3>
-                {selectedModule.courses?.length > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Title
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Category
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedModule.courses.map((course) => (
-                          <tr key={course.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                              {course.title}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {course.categoryName}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">
-                    No courses assigned to this module
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Lecturers</h3>
-                {selectedModule.lecturers?.length > 0 ? (
-                  <div className="border rounded-lg overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Name
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                            Department
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {selectedModule.lecturers.map((lecturer) => (
-                          <tr key={lecturer.id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                              {getLecturerName(lecturer)}
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                              {lecturer.department?.name || "Unknown"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">
-                    No lecturers assigned to this module
-                  </p>
-                )}
-              </div>
             </div>
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setSelectedModule(null)}
