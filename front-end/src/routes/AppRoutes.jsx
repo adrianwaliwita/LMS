@@ -4,14 +4,15 @@ import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import Modules from "../pages/student/Modules";
 import Profile from "../pages/Profile";
-import AssignmentSubmission from "../pages/student/AssignmentSubmission";
+import SubmitAssignments from "../pages/student/SubmitAssignments";
 import Layout from "../layout/Layout";
 import ManageUsers from "../pages/admin/ManageUsers";
 import ManageResources from "../pages/admin/ManageResources";
 import ManageBatches from "../pages/admin/ManageBatches";
 import ManageCourses from "../pages/admin/ManageCourses";
 import ManageModules from "../pages/admin/ManageModules";
-
+import ScheduleLectures from "../pages/coordinator/ScheduleLectures";
+import ManageAssignments from "../pages/coordinator/ManageAssignments";
 import ManageStudents from "../pages/coordinator/ManageStudents";
 import ManageAnnouncements from "../pages/coordinator/ManageAnnouncements";
 const AppRoutes = () => {
@@ -25,13 +26,15 @@ const AppRoutes = () => {
           <Route path="/manage-resources" element={<ManageResources />} />
           <Route path="/manage-users" element={<ManageUsers />} />
           <Route path="/manage-modules" element={<ManageModules />} />
-          <Route path="/assignment" element={<AssignmentSubmission />} />
+          <Route path="/assignment" element={<SubmitAssignments />} />
+          <Route path="/schedule-lectures" element={<ScheduleLectures />} />
 
           <Route path="/manage-students" element={<ManageStudents />} />
           <Route
             path="/manage-announcements"
             element={<ManageAnnouncements />}
           />
+          <Route path="/manage-assignments" element={<ManageAssignments />} />
 
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/" element={<Login />} />

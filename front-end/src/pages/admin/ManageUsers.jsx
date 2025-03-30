@@ -110,7 +110,7 @@ const UserManagement = () => {
       toast.error(errorMessage);
     }
   };
-
+  console.log(token);
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {

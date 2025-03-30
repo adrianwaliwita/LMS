@@ -4,10 +4,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiClient from "../../api/apiClient";
 import Announcements from "../../components/Announcements";
-import CourseCompletionVisualization from "../../components/visualizations/CourseCompletionVisualization";
-import RoleVisualizations from "../../components/visualizations/RoleVisualizations";
 import CourseDistributionVisualizations from "../../components/visualizations/CourseDistributionVisualizations";
-const AdminDashboard = () => {
+
+const CoordDashboard = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -70,58 +69,16 @@ const AdminDashboard = () => {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <ToastContainer position="top-right" autoClose={5000} />
-
       <div className="container mx-auto flex flex-col flex-grow p-4">
-        {/* User Visualizations */}
-        <h3 className="text-lg font-semibold text-blue-700 mb-[-10px]">
-          Analytics
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <RoleVisualizations users={users} roleMap={roleMap} />
-
-          <CourseCompletionVisualization
-            courses={courses}
-            modules={modules}
-            users={users}
-            batches={batches}
-          />
-        </div>
-        <div className="gap-4 pt-4">
+        {/* Visualizations Section */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <CourseDistributionVisualizations
             courses={courses}
             modules={modules}
-            users={users}
-            batches={batches}
           />
         </div>
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-4">
-          <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
-            <h3 className="text-lg font-semibold text-blue-700 mb-4">
-              Statistics
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Total Courses:</span>
-                <span className="font-medium text-blue-700">
-                  {courses.length}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Total Modules:</span>
-                <span className="font-medium text-green-600">
-                  {modules.length}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Total Batches:</span>
-                <span className="font-medium text-purple-600">
-                  {batches.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* User Statistics Card */}
 
         {/* Announcements Section */}
         <div className="mt-6">
@@ -132,4 +89,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default CoordDashboard;

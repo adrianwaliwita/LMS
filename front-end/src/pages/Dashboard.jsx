@@ -6,6 +6,9 @@ import NavlayOut from "../layout/NavLayout";
 import Announcements from "../components/Announcements";
 import AdminDashboard from "./admin/AdminDashboard";
 import StudentDashboard from "./student/StudentDashboard";
+import CoordDashboard from "./coordinator/CoordDashboard";
+import LecDashboard from "./lecturer/LecDashboard";
+
 const Dashboard = () => {
   const { user } = useAuth();
 
@@ -17,10 +20,9 @@ const Dashboard = () => {
           <HeaderDesktop />
         </div>
 
-        {/* Admin-only dashboard */}
         {user.role === 1 && <AdminDashboard />}
-
-        {/* Show Mini Schedule only for Students */}
+        {user.role === 2 && <CoordDashboard />}
+        {user.role === 3 && <LecDashboard />}
         {user.role === 4 && <StudentDashboard />}
       </div>
     </div>
