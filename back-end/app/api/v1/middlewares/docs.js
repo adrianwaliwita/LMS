@@ -20,6 +20,7 @@ const assignmentPaths = YAML.load(join(__dirname, '../docs/paths/assignments.yam
 const classroomPaths = YAML.load(join(__dirname, '../docs/paths/classrooms.yaml'));
 const equipmentPaths = YAML.load(join(__dirname, '../docs/paths/equipment.yaml'));
 const lecturePaths = YAML.load(join(__dirname, '../docs/paths/lectures.yaml'));
+const announcementPaths = YAML.load(join(__dirname, '../docs/paths/announcements.yaml'));
 
 // Merge all paths
 const spec = {
@@ -34,7 +35,8 @@ const spec = {
         ...assignmentPaths,
         ...classroomPaths,
         ...equipmentPaths,
-        ...lecturePaths
+        ...lecturePaths,
+        ...announcementPaths
     }
 };
 

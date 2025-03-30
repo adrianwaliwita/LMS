@@ -1,0 +1,209 @@
+announcements:
+  get:
+    summary: List announcements
+    description: |
+      Retrieves a list of announcements. By default, only returns active announcements.
+      For students, only returns global announcements and announcements for their enrolled batch.
+    parameters:
+      - name: targetBatchId
+        in: query
+        description: Filter announcements by batch ID
+        required: false
+        schema:
+          type: integer
+      - name: category
+        in: query
+        description: Filter announcements by category
+        required: false
+        schema:
+          type: string
+          enum: [ANNOUNCEMENT, EVENT]
+      - name: isActive
+        in: query
+        description: Filter announcements by active status (defaults to true if not provided)
+        required: false
+        schema:
+          type: string
+          enum: [true, false]
+    responses:
+      '200':
+        description: List of announcements
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '../openapi.yaml#/components/schemas/Announcement'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  post:
+    summary: Create a new announcement
+    description: Creates a new announcement. Only accessible by ADMIN, COORDINATOR, and LECTURER roles.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - title
+              - content
+            properties:
+              title:
+                type: string
+                description: Announcement title
+              content:
+                type: string
+                description: Announcement content
+              category:
+                type: string
+                enum: [ANNOUNCEMENT, EVENT]
+                default: ANNOUNCEMENT
+                description: Announcement category
+              targetBatchId:
+                type: integer
+                nullable: true
+                description: Target batch ID (null for global announcements)
+              isActive:
+                type: boolean
+                default: true
+                description: Whether the announcement is active
+    responses:
+      '201':
+        description: Announcement created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Announcement'
+      '400':
+        description: Invalid input
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+
+announcements/{id}:
+  get:
+    summary: Get announcement by ID
+    description: Retrieves a specific announcement by its ID
+    parameters:
+      - name: id
+        in: path
+        description: Announcement ID
+        required: true
+        schema:
+          type: integer
+    responses:
+      '200':
+        description: Announcement details
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Announcement'
+      '404':
+        description: Announcement not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  patch:
+    summary: Update an announcement
+    description: Updates an existing announcement. Only accessible by ADMIN, COORDINATOR, and LECTURER roles.
+    parameters:
+      - name: id
+        in: path
+        description: Announcement ID
+        required: true
+        schema:
+          type: integer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            properties:
+              title:
+                type: string
+                description: Announcement title
+              content:
+                type: string
+                description: Announcement content
+              category:
+                type: string
+                enum: [ANNOUNCEMENT, EVENT]
+                description: Announcement category
+              targetBatchId:
+                type: integer
+                nullable: true
+                description: Target batch ID (null for global announcements)
+              isActive:
+                type: boolean
+                description: Whether the announcement is active
+    responses:
+      '200':
+        description: Announcement updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Announcement'
+      '400':
+        description: Invalid input
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '404':
+        description: Announcement not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+  delete:
+    summary: Delete an announcement
+    description: Deletes an existing announcement. Only accessible by ADMIN, COORDINATOR, and LECTURER roles.
+    parameters:
+      - name: id
+        in: path
+        description: Announcement ID
+        required: true
+        schema:
+          type: integer
+    responses:
+      '204':
+        description: Announcement deleted successfully
+      '404':
+        description: Announcement not found
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../openapi.yaml#/components/schemas/Error' 

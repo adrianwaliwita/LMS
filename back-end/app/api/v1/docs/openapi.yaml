@@ -28,6 +28,59 @@ components:
           type: string
           description: Human readable error message
 
+    Announcement:
+      type: object
+      required:
+        - id
+        - title
+        - content
+        - category
+        - createdBy
+        - isActive
+      properties:
+        id:
+          type: integer
+          description: Announcement ID
+        title:
+          type: string
+          description: Announcement title
+        content:
+          type: string
+          description: Announcement content
+        category:
+          type: string
+          enum: [ANNOUNCEMENT, EVENT]
+          description: >
+            Announcement category:
+            * ANNOUNCEMENT - General announcement
+            * EVENT - Event announcement
+        createdBy:
+          type: integer
+          description: ID of the user who created the announcement
+        targetBatchId:
+          type: integer
+          nullable: true
+          description: ID of the target batch (null for global announcements)
+        isActive:
+          type: boolean
+          default: true
+          description: Whether the announcement is active
+        batch:
+          $ref: '#/components/schemas/Batch'
+          nullable: true
+          description: Details of the target batch (if any)
+        creator:
+          $ref: '#/components/schemas/User'
+          description: Details of the user who created the announcement
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
     Department:
       type: object
       properties:
@@ -474,6 +527,10 @@ components:
           description: Last update timestamp
 
 paths:
+  /announcements:
+    $ref: './paths/announcements.yaml#/announcements'
+  /announcements/{id}:
+    $ref: './paths/announcements.yaml#/announcements/{id}'
   /departments:
     $ref: './paths/departments.yaml#/departments'
   /departments/{id}:

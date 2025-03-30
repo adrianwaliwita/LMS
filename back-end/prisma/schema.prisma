@@ -212,20 +212,19 @@ enum AnnouncementCategory {
 
 model Announcement {
   id            Int                  @id @default(autoincrement())
+  targetBatchId Int?                 @map("target_batch_id")
   title         String
   content       String
   category      AnnouncementCategory @default(ANNOUNCEMENT)
-  createdBy     Int                  @map("created_by")
-  targetBatchId Int?                 @map("target_batch_id")
   isActive      Boolean              @default(true) @map("is_active")
-  activeFrom    DateTime?            @map("active_from")
-  activeTill    DateTime?            @map("active_till")
+  createdBy     Int                  @map("created_by")
   createdAt     DateTime             @default(now()) @map("created_at")
   updatedAt     DateTime             @updatedAt @map("updated_at")
 
   batch   Batch? @relation(fields: [targetBatchId], references: [id], onDelete: Cascade)
   creator User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
+  @@unique([title, targetBatchId])
   @@map("announcement")
 }
 

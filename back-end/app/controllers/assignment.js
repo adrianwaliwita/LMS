@@ -1,4 +1,5 @@
 import { Assignment } from '../models/Assignment.js';
+import { Announcement } from '../models/Announcement.js';
 import logger from '../utils/logger.js';
 
 export const createAssignment = async (req, res) => {
@@ -54,6 +55,16 @@ export const createAssignment = async (req, res) => {
             description,
             dueDate,
             createdBy
+        });
+
+        // Create an announcement for the new assignment
+        await Announcement.createAnnouncement({
+            title: `New Assignment: ${title}`,
+            content: `A new assignment "${title}" has been created for your batch.\n\nDue Date: ${new Date(dueDate).toLocaleString()}\n\n${description}`,
+            category: 'ANNOUNCEMENT',
+            createdBy,
+            targetBatchId: batchId,
+            isActive: true
         });
 
         logger.info(`[assignment.createAssignment] Created new assignment with id: ${assignment.id}`);

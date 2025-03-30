@@ -2,6 +2,7 @@ import Lecture from '../models/Lecture.js';
 import logger from '../utils/logger.js';
 import prisma from '../utils/prisma.js';
 import { User } from '../models/User.js';
+import { Announcement } from '../models/Announcement.js';
 
 export const listAvailableResources = async (req, res) => {
     const { batchId, moduleId, fromDateTime: fromDateTimeString, toDateTime: toDateTimeString } = req.query;
@@ -394,6 +395,16 @@ export const createLecture = async (req, res) => {
             lecturerId,
             classroomIds,
             equipment
+        });
+
+        // Create an announcement for the new lecture
+        await Announcement.createAnnouncement({
+            title: `New Lecture: ${title}`,
+            content: `A new lecture "${title}" has been scheduled for your batch.\n\nDate: ${new Date(scheduledFrom).toLocaleDateString()}\nTime: ${new Date(scheduledFrom).toLocaleTimeString()} - ${new Date(scheduledTo).toLocaleTimeString()}`,
+            category: 'ANNOUNCEMENT',
+            createdBy: lecturerId,
+            targetBatchId: batchId,
+            isActive: true
         });
 
         logger.info(`[lecture.createLecture] Lecture created successfully with title: '${title}'`);

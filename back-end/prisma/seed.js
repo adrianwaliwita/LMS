@@ -6,6 +6,7 @@ import { seedModules } from './seeds/modules.js';
 import { seedCourses } from './seeds/courses.js';
 import { seedBatches } from './seeds/batches.js';
 import { seedUsers } from './seeds/users.js';
+import { seedAnnouncements } from './seeds/announcements.js';
 
 const prisma = new PrismaClient();
 
@@ -13,23 +14,26 @@ async function main() {
     console.log('Starting seed...');
 
     // Seed departments
-    await seedDepartments(prisma);
+    // await seedDepartments(prisma);
 
-    // Seed modules
-    await seedModules(prisma);
+    // // Seed modules
+    // await seedModules(prisma);
 
-    // Seed courses after departments
-    await seedCourses(prisma);
+    // // Seed courses after departments
+    // await seedCourses(prisma);
 
-    // Seed batches after courses
-    await seedBatches(prisma);
+    // // Seed batches after courses
+    // await seedBatches(prisma);
 
-    // Seed users after batches
-    await seedUsers(prisma);
+    // // Seed users after batches
+    // await seedUsers(prisma);
+
+    // Seed announcements after users and batches are created
+    await seedAnnouncements(prisma);
 
     // // Seed facilities
-    await seedClassrooms(prisma);
-    await seedEquipment(prisma);
+    // await seedClassrooms(prisma);
+    // await seedEquipment(prisma);
 
     console.log('Seed completed.');
 }
