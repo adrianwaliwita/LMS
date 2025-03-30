@@ -308,13 +308,13 @@
             schema:
               $ref: '#/components/schemas/Error'
 
-/lectures/list-available-resources:
+/lectures/find-available-resources:
   get:
     tags:
       - Lectures
-    summary: List available resources for a time slot
+    summary: Find available resources for a time slot
     description: >
-      List all resources (lecturers, classrooms, equipment) that are available for a given time slot.
+      Find all resources (lecturers, classrooms, equipment) that are available for a given time slot.
       This endpoint is useful for checking resource availability before scheduling a lecture.
       
       Note that:

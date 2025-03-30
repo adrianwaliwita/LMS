@@ -569,8 +569,8 @@ paths:
     $ref: './paths/lectures.yaml#/lectures'
   /lectures/{id}:
     $ref: './paths/lectures.yaml#/lectures/{id}'
-  /lectures/list-available-resources:
-    $ref: './paths/lectures.yaml#/lectures/list-available-resources'
+  /lectures/find-available-resources:
+    $ref: './paths/lectures.yaml#/lectures/find-available-resources'
 
 security:
   - BearerAuth: [] 
