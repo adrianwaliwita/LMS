@@ -159,7 +159,7 @@ class User {
                 if (role === 3 && assignedModuleIds?.length > 0) { // 3 is LECTURER role
                     await tx.lecturerModule.createMany({
                         data: assignedModuleIds.map(moduleId => ({
-                            userId: newUser.id,
+                            lecturerId: newUser.id,
                             moduleId: Number(moduleId)
                         }))
                     });

@@ -23,19 +23,19 @@ assignments:
             schema:
               type: array
               items:
-                $ref: '../openapi.yaml#/components/schemas/Assignment'
+                $ref: '#/components/schemas/Assignment'
       '400':
         description: Invalid filter values
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
   
   post:
     tags:
@@ -77,25 +77,25 @@ assignments:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Assignment'
+              $ref: '#/components/schemas/Assignment'
       '400':
         description: Missing required fields, invalid input, or invalid due date
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '409':
         description: Assignment with this title already exists for this batch and module
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{id}:
   get:
@@ -116,19 +116,19 @@ assignments/{id}:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Assignment'
+              $ref: '#/components/schemas/Assignment'
       '404':
         description: Assignment not found
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{id}/upload-brief:
   post:
@@ -162,25 +162,25 @@ assignments/{id}/upload-brief:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Assignment'
+              $ref: '#/components/schemas/Assignment'
       '400':
         description: Missing file, invalid file type, or file too large
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '404':
         description: Assignment not found
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{id}/download-brief:
   get:
@@ -208,13 +208,13 @@ assignments/{id}/download-brief:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{id}/make-submission:
   post:
@@ -248,31 +248,31 @@ assignments/{id}/make-submission:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/AssignmentSubmission'
+              $ref: '#/components/schemas/AssignmentSubmission'
       '400':
         description: Missing file, invalid file type, file too large, or submission after due date
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '404':
         description: Assignment not found
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '409':
         description: Student has already submitted this assignment
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{id}/submissions:
   get:
@@ -295,19 +295,19 @@ assignments/{id}/submissions:
             schema:
               type: array
               items:
-                $ref: '../openapi.yaml#/components/schemas/AssignmentSubmission'
+                $ref: '#/components/schemas/AssignmentSubmission'
       '404':
         description: Assignment not found
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
 
 assignments/{assignmentId}/submissions/{submissionId}/download:
   get:
@@ -341,16 +341,16 @@ assignments/{assignmentId}/submissions/{submissionId}/download:
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '404':
         description: Assignment or submission not found
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error'
+              $ref: '#/components/schemas/Error'
       '500':
         description: Server error
         content:
           application/json:
             schema:
-              $ref: '../openapi.yaml#/components/schemas/Error' 
+              $ref: '#/components/schemas/Error' 
