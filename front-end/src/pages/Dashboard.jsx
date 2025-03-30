@@ -10,7 +10,6 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   if (!user) return <p>Loading...</p>; // Show loading while fetching user
-  console.log(user);
   return (
     <div className="flex">
       <div className="flex-1 p-6 rounded-2xl">

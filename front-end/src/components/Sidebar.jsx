@@ -33,17 +33,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       { name: "Profile Settings", path: `/profile` },
     ],
 
-    3: [
-      { name: "Home", path: "/dashboard" },
-      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
-      { name: "Profile Settings", path: `/profile` },
-    ],
-
     2: [
       { name: "Home", path: "/dashboard" },
       { name: "Manage Modules", path: "/manage-modules" },
       { name: "Manage Students", path: "/manage-students" }, //done
-
       { name: "Manage Assignments", path: "/assignment" }, //show users who submitted the assignment
       {
         name: "Manage Lecture Scheduling & Resources",
@@ -51,6 +44,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       }, //can manage resources, equipment and classrooms necessary for the lecturers (1st step select the module, 2nd step has to select batch, date and time slot, 3rd send request to api and populate content. )
       { name: "Manage Announcements", path: "/manage-announcements" },
 
+      { name: "Profile Settings", path: `/profile` },
+    ],
+
+    3: [
+      { name: "Home", path: "/dashboard" },
+      { name: "Manage & Schedule Classes", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
       { name: "Profile Settings", path: `/profile` },
     ],
 
@@ -68,14 +67,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   return (
     <div className="flex h-screen">
-      {/* Overlay darkening background - only on mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-[#0000003f] z-10 md:hidden"
-          onClick={() => setIsOpen(false)}
-        ></div>
-      )}
-
       {/* Sidebar - Fixed, doesn't move with scroll */}
       <div
         className={`w-60 h-screen bg-gradient-to-br from-[#0008BF] to-[#164beb] shadow-[10px_0_20px_-5px_rgba(0,0,0,0.2)] text-white p-4 fixed top-0 left-0 z-20 transition-all duration-300 ease-in-out overflow-y-auto

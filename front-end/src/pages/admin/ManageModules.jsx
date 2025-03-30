@@ -197,7 +197,7 @@ const ModuleManagement = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full sm:w-1/2 p-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
               />
-              <div className="flex gap-4">
+              <div className="flex gap-2">
                 <select
                   value={filterCourse}
                   onChange={(e) => setFilterCourse(e.target.value)}
@@ -218,7 +218,7 @@ const ModuleManagement = () => {
                   }}
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                 >
-                  + Add New Module
+                  + Add Module
                 </button>
               </div>
             </div>

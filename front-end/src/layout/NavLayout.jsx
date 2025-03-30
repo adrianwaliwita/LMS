@@ -1,6 +1,6 @@
 // Layout.jsx (This is a new file to combine Header and Sidebar)
 import React, { useState } from "react";
-import Header from "../components/Header";
+import HeaderMobile from "../components/HeaderMobile";
 import Sidebar from "../components/Sidebar";
 
 const Layout = ({ children }) => {
@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
   return (
     <div className="flex flex-col min-h-screen">
       <div className="md:hidden">
-        <Header className toggleSidebar={toggleSidebar} />
+        <HeaderMobile className toggleSidebar={toggleSidebar} />
       </div>
 
       <div className="flex flex-1">
