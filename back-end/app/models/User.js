@@ -4,6 +4,7 @@ import logger from '../utils/logger.js';
 import { Department } from './Department.js';
 import { Batch } from './Batch.js';
 import { Module } from './Module.js';
+import { sendEmail } from '../utils/email.js';
 
 const UserRoles = Object.freeze({
     0: 'TERMINATED',
@@ -174,6 +175,41 @@ class User {
                 return newUser;
             });
 
+            // Send welcome email
+            const roleNames = {
+                1: 'Administrator',
+                2: 'Coordinator',
+                3: 'Lecturer',
+                4: 'Student'
+            };
+
+            const emailHtml = `
+                <h2>Welcome to the AshBourne University Smart Campus Management System (SCMS)!</h2>
+                <p>Dear ${firstName} ${lastName},</p>
+                <p>Your account has been created successfully as a ${roleNames[role]}. Here are your login credentials:</p>
+                <ul>
+                    <li><strong>Email:</strong> ${email}</li>
+                    <li><strong>Password:</strong> ${generatedPassword}</li>
+                </ul>
+                <p>To access the system:</p>
+                <ol>
+                    <li>Visit our login page</li>
+                    <li>Enter your email address and the password provided above</li>
+                    <li>You will be logged in to the system immediately after your first login</li>
+                </ol>
+                <p><strong>Important:</strong> Please change your password immediately after your first login for security purposes.</p>
+                <p>If you have any questions or need assistance, please contact your coordinator.</p>
+                <p>Best regards,<br>AshBourne University.</p>
+            `;
+
+            await sendEmail({
+                to: email,
+                subject: 'Welcome to AshBourne University SCMS - Your Account Details',
+                html: emailHtml
+            });
+
+            logger.info(`[User.createUser] Welcome email sent to user: ${email}`);
+
             return User.getUserById(user.id);
         } catch (error) {
             // If Firebase user was created but database insert failed, delete the Firebase user
@@ -188,11 +224,12 @@ class User {
                 }
             }
 
+            logger.error('[User.createUser] Failed to create user or send welcome email', error);
             throw error;
         }
     }
 
-    static async updateUser({ id, firstName, lastName, role, departmentId }) {
+    static async updateUser({ id, firstName, lastName, role, departmentId, password }) {
         const user = await prisma.$transaction(async (tx) => {
             const updatedUser = await tx.user.update({
                 where: { id: Number(id) },
@@ -203,6 +240,14 @@ class User {
                     departmentId: departmentId !== undefined ? Number(departmentId) : undefined
                 }
             });
+
+            // Update Firebase password if provided
+            if (password) {
+                await auth.updateUser(updatedUser.firebaseUid, {
+                    password: password
+                });
+                logger.info(`[User.updateUser] Password updated for user ID: '${id}'`);
+            }
 
             // Update Firebase custom claims if role is changed
             if (role !== undefined) {
@@ -231,6 +276,63 @@ class User {
 
         // Delete user from Firebase
         await auth.deleteUser(deletedUser.firebaseUid);
+    }
+
+    static async resetPassword(email) {
+        try {
+            // Get user details
+            const user = await prisma.user.findUnique({
+                where: { email }
+            });
+
+            if (!user) {
+                throw new Error('No user found with this email address');
+            }
+
+            // Generate a new secure password
+            const newPassword = User.generateSecurePassword();
+
+            // Update password in Firebase
+            await auth.updateUser(user.firebaseUid, {
+                password: newPassword
+            });
+
+            // Send password reset email
+            const emailHtml = `
+                <h2>AshBourne University Smart Campus Management System (SCMS) - Password Reset</h2>
+                <p>Dear ${user.firstName} ${user.lastName},</p>
+                <p>Your password has been reset successfully. Here are your new login credentials:</p>
+                <ul>
+                    <li><strong>Email:</strong> ${user.email}</li>
+                    <li><strong>Password:</strong> ${newPassword}</li>
+                </ul>
+                <p>To access the system:</p>
+                <ol>
+                    <li>Visit our login page</li>
+                    <li>Enter your email address and the new password provided above</li>
+                    <li>You will be logged in to the system immediately</li>
+                </ol>
+                <p><strong>Important:</strong> Please change your password immediately after you login for security purposes.</p>
+                <p>If you have any questions or need assistance, please contact your coordinator.</p>
+                <p>Best regards,<br>AshBourne University.</p>
+            `;
+
+            await sendEmail({
+                to: user.email,
+                subject: 'AshBourne University SCMS - Password Reset',
+                html: emailHtml
+            });
+
+            logger.info(`[User.resetPassword] Password reset email sent to user: ${email}`);
+
+            // Revoke all refresh tokens for the user to force re-login
+            await auth.revokeRefreshTokens(user.firebaseUid);
+            
+            return true;
+        } catch (error) {
+            logger.error('[User.resetPassword] Failed to reset password', error);
+            throw error;
+        }
     }
 }
 

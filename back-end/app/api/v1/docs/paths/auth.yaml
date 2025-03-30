@@ -67,4 +67,53 @@
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error' 
+              $ref: '#/components/schemas/Error'
+
+/reset-user-password:
+  post:
+    tags:
+      - Authentication
+    summary: Reset user password
+    description: Reset password for a user account using their email address. A new password will be generated and sent to the user's email.
+    security: []  # No authentication required for password reset
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+            properties:
+              email:
+                type: string
+                format: email
+                description: Email address of the account to reset password
+    responses:
+      200:
+        description: Password reset request processed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  description: Always true for security (prevents email enumeration)
+                message:
+                  type: string
+                  description: Generic success message
+                  example: "If an account exists with this email, a new password has been sent to it."
+      400:
+        description: Invalid email format
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: "Invalid email"
+                message:
+                  type: string
+                  example: "Please provide a valid email address" 

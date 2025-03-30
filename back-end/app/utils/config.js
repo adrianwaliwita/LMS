@@ -24,5 +24,9 @@ export default {
     },
     crypto: {
         masterKey: process.env.ENCRYPTION_MASTER_KEY
+    },
+    email: {
+        sender: process.env.EMAIL_SENDER?.trim(),
+        password: process.env.EMAIL_APP_PASSWORD?.trim(),
     }
 };

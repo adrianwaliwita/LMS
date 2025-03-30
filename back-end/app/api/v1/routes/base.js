@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { serveApiDocs, setupApiDocs } from '../middlewares/docs.js';
 import { verifyFirebaseToken } from '../middlewares/fb-auth.js';
 import { auth } from '../../../controllers/auth.js';
+import { resetUserPassword } from '../../../controllers/user.js';
 import usersRouter from './users.js';
 import departmentsRouter from './departments.js';
 import modulesRouter from './modules.js';
@@ -19,10 +20,11 @@ const v1Router = Router();
 v1Router.use('/docs', serveApiDocs);
 v1Router.get('/docs', setupApiDocs);
 
-// Auth routes
+// Auth routes (no auth required)
 v1Router.post('/auth', auth);
+v1Router.post('/reset-user-password', resetUserPassword);
 
-// Add Verify Firebase Token middleware to all routes
+// Add Verify Firebase Token middleware to all routes below
 v1Router.use(verifyFirebaseToken);
 
 // Other Routes

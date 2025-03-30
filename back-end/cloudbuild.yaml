@@ -21,7 +21,7 @@ steps:
           --region "${_REGION}" \
           --allow-unauthenticated \
           --set-env-vars "NODE_ENV=production,FIREBASE_DISABLE_AUTH=false,FIREBASE_CHECK_REVOKED_TOKENS=true,DATABASE_URL=mysql://$$DATABASE_USERNAME:$$DATABASE_PASSWORD@localhost/ashbourne_scms?socket=/cloudsql/${PROJECT_ID}:${_REGION}:${_DATABASE_INSTANCE_NAME}" \
-          --set-secrets ENCRYPTION_MASTER_KEY=ENCRYPTION_MASTER_KEY:latest
+          --set-secrets ENCRYPTION_MASTER_KEY=ENCRYPTION_MASTER_KEY:latest,EMAIL_SENDER=EMAIL_SENDER:latest,EMAIL_APP_PASSWORD=EMAIL_APP_PASSWORD:latest
     secretEnv: ['DATABASE_USERNAME', 'DATABASE_PASSWORD']
 
 availableSecrets:

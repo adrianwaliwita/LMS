@@ -153,13 +153,13 @@ export const createUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     const { id } = req.params;
-    const { firstName, lastName, role, departmentId } = req.body;
+    const { firstName, lastName, role, departmentId, password } = req.body;
 
     // Validate that at least one field is provided for update
-    if (!firstName && !lastName && role === undefined && departmentId === undefined) {
+    if (!firstName && !lastName && role === undefined && departmentId === undefined && !password) {
         return res.status(400).json({
             error: 'Missing fields',
-            message: 'At least one field (firstName, lastName, role, or departmentId) must be provided for update'
+            message: 'At least one field (firstName, lastName, role, departmentId, or password) must be provided for update'
         });
     }
 
@@ -169,6 +169,48 @@ export const updateUser = async (req, res) => {
             error: 'Invalid input',
             message: `${!firstName?.trim() ? 'firstName' : 'lastName'} cannot be empty`
         });
+    }
+
+    // Validate password if provided
+    if (password !== undefined) {
+        if (typeof password !== 'string' || password.length < 8) {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'Password must be at least 8 characters long'
+            });
+        }
+
+        // Check for at least one uppercase letter
+        if (!/[A-Z]/.test(password)) {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'Password must contain at least one uppercase letter'
+            });
+        }
+
+        // Check for at least one lowercase letter
+        if (!/[a-z]/.test(password)) {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'Password must contain at least one lowercase letter'
+            });
+        }
+
+        // Check for at least one number
+        if (!/\d/.test(password)) {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'Password must contain at least one number'
+            });
+        }
+
+        // Check for at least one special character
+        if (!/[!@#$%^&*]/.test(password)) {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'Password must contain at least one special character (!@#$%^&*)'
+            });
+        }
     }
 
     // Validate role if provided
@@ -193,9 +235,13 @@ export const updateUser = async (req, res) => {
     }
     
     try {
-        const user = await User.updateUser({ id, firstName, lastName, role, departmentId });
+        const user = await User.updateUser({ id, firstName, lastName, role, departmentId, password });
 
-        logger.info(`[user.updateUser] User updated successfully for ID: '${id}'`);
+        const successMessage = password 
+            ? 'User updated successfully. Password has been changed.'
+            : 'User updated successfully';
+        logger.info(`[user.updateUser] ${successMessage} for ID: '${id}'`);
+        
         res.json(user);
     } catch (error) {
         if (error.code === 'P2025') { // Record not found
@@ -209,6 +255,13 @@ export const updateUser = async (req, res) => {
             return res.status(400).json({
                 error: 'Invalid department',
                 message: 'The specified department does not exist'
+            });
+        }
+
+        if (error.code === 'auth/invalid-password') {
+            return res.status(400).json({
+                error: 'Invalid password',
+                message: 'The password provided does not meet Firebase requirements'
             });
         }
         
@@ -242,4 +295,42 @@ export const deleteUser = async (req, res) => {
             message: error.toString()
         });
     }
+};
+
+export const resetUserPassword = async (req, res) => {
+    const { email } = req.body;
+
+    // Validate email is provided
+    if (!email) {
+        return res.status(400).json({
+            error: 'Missing email',
+            message: 'Email address is required'
+        });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({
+            error: 'Invalid email',
+            message: 'Please provide a valid email address'
+        });
+    }
+
+    try {
+        await User.resetPassword(email);
+        
+        logger.info(`[user.resetUserPassword] Password reset successful for email: ${email}`);
+    } catch (error) {
+        // Don't log if user is not found - this is an expected case
+        if (error.message !== 'No user found with this email address') {
+            logger.error(`[user.resetUserPassword] Failed to reset password for email: '${email}'`, error);
+        }
+    }
+    
+    // Always return the same message to prevent email enumeration
+    res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a new password has been sent to it.'
+    });
 };
