@@ -10,6 +10,7 @@ import batchesRouter from './batches.js';
 import assignmentsRouter from './assignments.js';
 import classroomsRouter from './classrooms.js';
 import equipmentRouter from './equipment.js';
+import lecturesRouter from './lectures.js';
 
 const v1Router = Router();
 
@@ -32,5 +33,6 @@ v1Router.use('/batches', batchesRouter);
 v1Router.use('/assignments', assignmentsRouter);
 v1Router.use('/classrooms', classroomsRouter);
 v1Router.use('/equipment', equipmentRouter);
+v1Router.use('/lectures', lecturesRouter);
 
 export default v1Router;

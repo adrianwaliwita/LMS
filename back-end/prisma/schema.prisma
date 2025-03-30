@@ -25,11 +25,13 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  department                   Department             @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  department                   Department                  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   studentBatch                 StudentBatch?
   lecturerModules              LecturerModule[]
   createdAssignments           Assignment[]
   studentAssignmentSubmissions AssignmentSubmission[]
+  announcements                Announcement[]
+  lecturerLectureAllocations   LectureLecturerAllocation[]
 
   @@map("user")
 }
@@ -57,6 +59,7 @@ model Module {
   courses     CourseModule[]
   lecturers   LecturerModule[]
   assignments Assignment[]
+  lectures    Lecture[]
 
   @@map("module")
 }
@@ -102,9 +105,11 @@ model Batch {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  course      Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  students    StudentBatch[]
-  assignments Assignment[]
+  course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  students      StudentBatch[]
+  assignments   Assignment[]
+  announcements Announcement[]
+  lectures      Lecture[]
 
   @@unique([courseId, name])
   @@map("batch")
@@ -127,15 +132,15 @@ model StudentBatch {
 
 // Junction table for Lecturer-Module M:M relationship
 model LecturerModule {
-  userId    Int      @map("user_id")
-  moduleId  Int      @map("module_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  lecturerId Int      @map("lecturer_id")
+  moduleId   Int      @map("module_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lecturer User   @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
 
-  @@id([userId, moduleId])
+  @@id([lecturerId, moduleId])
   @@map("lecturer_module")
 }
 
@@ -182,6 +187,8 @@ model Classroom {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  lectureClassroomAllocations LectureClassroomAllocation[]
+
   @@map("classroom")
 }
 
@@ -193,5 +200,102 @@ model Equipment {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  lectureEquipmentAllocations LectureEquipmentAllocation[]
+
   @@map("equipment")
+}
+
+enum AnnouncementCategory {
+  ANNOUNCEMENT
+  EVENT
+}
+
+model Announcement {
+  id            Int                  @id @default(autoincrement())
+  title         String
+  content       String
+  category      AnnouncementCategory @default(ANNOUNCEMENT)
+  createdBy     Int                  @map("created_by")
+  targetBatchId Int?                 @map("target_batch_id")
+  isActive      Boolean              @default(true) @map("is_active")
+  activeFrom    DateTime?            @map("active_from")
+  activeTill    DateTime?            @map("active_till")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+
+  batch   Batch? @relation(fields: [targetBatchId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@map("announcement")
+}
+
+model Lecture {
+  id            Int      @id @default(autoincrement())
+  batchId       Int      @map("batch_id")
+  moduleId      Int      @map("module_id")
+  title         String
+  scheduledFrom DateTime @map("scheduled_from")
+  scheduledTo   DateTime @map("scheduled_to")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  batch                Batch                        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  module               Module                       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lecturerAllocation   LectureLecturerAllocation?
+  classroomAllocations LectureClassroomAllocation[]
+  equipmentAllocations LectureEquipmentAllocation[]
+
+  @@unique([batchId, moduleId, scheduledFrom, scheduledTo])
+  @@map("lecture")
+}
+
+model LectureLecturerAllocation {
+  id           Int      @id @default(autoincrement())
+  lectureId    Int      @unique @map("lecture_id")
+  lecturerId   Int      @map("lecturer_id")
+  date         DateTime @map("date") @db.Date
+  fromTimeSlot Int      @map("from_time_slot")
+  toTimeSlot   Int      @map("to_time_slot")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  lecture  Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  lecturer User    @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+
+  @@map("lecture_lecturer_allocation")
+}
+
+model LectureClassroomAllocation {
+  id           Int      @id @default(autoincrement())
+  lectureId    Int      @map("lecture_id")
+  classroomId  Int      @map("classroom_id")
+  date         DateTime @map("date") @db.Date
+  fromTimeSlot Int      @map("from_time_slot")
+  toTimeSlot   Int      @map("to_time_slot")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  lecture   Lecture   @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  classroom Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  @@unique([lectureId, classroomId])
+  @@map("lecture_classroom_allocation")
+}
+
+model LectureEquipmentAllocation {
+  id               Int      @id @default(autoincrement())
+  lectureId        Int      @map("lecture_id")
+  equipmentId      Int      @map("equipment_id")
+  date             DateTime @map("date") @db.Date
+  fromTimeSlot     Int      @map("from_time_slot")
+  toTimeSlot       Int      @map("to_time_slot")
+  reservedQuantity Int      @map("reserved_quantity")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  lecture   Lecture   @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@unique([lectureId, equipmentId])
+  @@map("lecture_equipment_allocation")
 }

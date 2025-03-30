@@ -1,0 +1,413 @@
+/lectures:
+  get:
+    tags:
+      - Lectures
+    summary: List lectures
+    description: >
+      Retrieve a list of lectures that are in progress or scheduled for the future.
+      Can be filtered by:
+      * Batch ID
+      * Module ID
+      * Lecturer ID
+      
+      The response includes:
+      * Batch details
+      * Module details
+      * Lecturer allocation
+      * Classroom allocations
+      * Equipment allocations
+    parameters:
+      - in: query
+        name: batchId
+        schema:
+          type: integer
+        description: Filter lectures by batch ID
+      - in: query
+        name: moduleId
+        schema:
+          type: integer
+        description: Filter lectures by module ID
+      - in: query
+        name: lecturerId
+        schema:
+          type: integer
+        description: Filter lectures by lecturer ID
+    responses:
+      200:
+        description: List of lectures retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Lecture'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  post:
+    tags:
+      - Lectures
+    summary: Create a new lecture
+    description: >
+      Create a new lecture with the provided details. Note that:
+      * Times must be aligned to 30-minute slots (e.g., 9:00, 9:30, 10:00)
+      * Lecturer must be available during the scheduled time
+      * Classrooms must be available and have sufficient capacity
+      * Equipment must be available in the requested quantities
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - batchId
+              - moduleId
+              - title
+              - scheduledFrom
+              - scheduledTo
+              - lecturerId
+              - classroomIds
+            properties:
+              batchId:
+                type: integer
+                description: ID of the batch this lecture belongs to (must be positive)
+              moduleId:
+                type: integer
+                description: ID of the module this lecture belongs to (must be positive)
+              title:
+                type: string
+                description: Lecture title (cannot be empty)
+              scheduledFrom:
+                type: string
+                format: date-time
+                description: Lecture start time (must be aligned to 30-minute slots)
+              scheduledTo:
+                type: string
+                format: date-time
+                description: Lecture end time (must be aligned to 30-minute slots and after scheduledFrom)
+              lecturerId:
+                type: integer
+                description: ID of the lecturer to allocate (must be positive)
+              classroomIds:
+                type: array
+                items:
+                  type: integer
+                minItems: 1
+                description: IDs of classrooms to allocate (must be non-empty array of positive integers)
+              equipment:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - equipmentId
+                    - quantity
+                  properties:
+                    equipmentId:
+                      type: integer
+                      minimum: 1
+                      description: ID of the equipment to allocate (must be positive)
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      description: Quantity to reserve (must be positive)
+                description: Equipment to allocate (optional)
+    responses:
+      201:
+        description: Lecture created successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lecture'
+      400:
+        description: >
+          Invalid input. Possible reasons:
+          * Missing required fields (batchId, moduleId, title, scheduledFrom, scheduledTo, lecturerId, classroomIds)
+          * Invalid IDs (must be positive integers)
+          * Empty title
+          * Invalid dates (must be valid and scheduledFrom before scheduledTo)
+          * Times not aligned to 30-minute slots
+          * Empty classroomIds array
+          * Invalid equipment data (must have valid equipmentId and positive quantity)
+          * Referenced batch/module/lecturer/classroom/equipment not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      409:
+        description: >
+          Scheduling conflict. A lecture already exists for this batch and module at the specified time.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/lectures/{id}:
+  parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+      description: Lecture ID
+
+  get:
+    tags:
+      - Lectures
+    summary: Get lecture by ID
+    description: >
+      Retrieve lecture details by ID. The response includes:
+      * Batch details
+      * Module details
+      * Lecturer allocation
+      * Classroom allocations
+      * Equipment allocations
+    responses:
+      200:
+        description: Lecture details retrieved successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lecture'
+      404:
+        description: Lecture not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  patch:
+    tags:
+      - Lectures
+    summary: Update lecture
+    description: >
+      Update lecture details by ID. Note that:
+      * At least one field must be provided
+      * If updating times, both scheduledFrom and scheduledTo must be provided
+      * Times must be aligned to 30-minute slots
+      * Resource availability will be re-checked for any changes
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            minProperties: 1
+            properties:
+              title:
+                type: string
+                description: New lecture title (cannot be empty if provided)
+              scheduledFrom:
+                type: string
+                format: date-time
+                description: New start time (must be provided with scheduledTo, aligned to 30-minute slots)
+              scheduledTo:
+                type: string
+                format: date-time
+                description: New end time (must be provided with scheduledFrom, aligned to 30-minute slots)
+              lecturerId:
+                type: integer
+                minimum: 1
+                description: ID of the new lecturer to allocate (must be positive if provided)
+              classroomIds:
+                type: array
+                items:
+                  type: integer
+                  minimum: 1
+                minItems: 1
+                description: IDs of new classrooms to allocate (must be non-empty array of positive integers if provided)
+              equipment:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - equipmentId
+                    - quantity
+                  properties:
+                    equipmentId:
+                      type: integer
+                      minimum: 1
+                      description: ID of the equipment to allocate (must be positive)
+                    quantity:
+                      type: integer
+                      minimum: 1
+                      description: Quantity to reserve (must be positive)
+                description: New equipment allocations (if provided, must be array of valid equipment items)
+    responses:
+      200:
+        description: Lecture updated successfully
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lecture'
+      400:
+        description: >
+          Invalid input. Possible reasons:
+          * No fields provided for update
+          * Empty title
+          * Only one time field provided (must provide both scheduledFrom and scheduledTo)
+          * Invalid dates (must be valid and scheduledFrom before scheduledTo)
+          * Times not aligned to 30-minute slots
+          * Invalid lecturerId (must be positive integer)
+          * Empty or invalid classroomIds array
+          * Invalid equipment data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      404:
+        description: Lecture or referenced resources not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+  delete:
+    tags:
+      - Lectures
+    summary: Delete lecture
+    description: >
+      Delete lecture by ID. This will:
+      * Delete the lecture from the database
+      * Remove all related allocations (lecturer, classrooms, equipment)
+    responses:
+      204:
+        description: Lecture deleted successfully
+      404:
+        description: Lecture not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/lectures/list-available-resources:
+  get:
+    tags:
+      - Lectures
+    summary: List available resources for a time slot
+    description: >
+      List all resources (lecturers, classrooms, equipment) that are available for a given time slot.
+      This endpoint is useful for checking resource availability before scheduling a lecture.
+      
+      Note that:
+      * Times must be aligned to 30-minute slots
+      * Only returns classrooms with sufficient capacity for the batch's student count
+      * Only returns lecturers assigned to the specified module
+      * Equipment quantities account for existing reservations
+    parameters:
+      - in: query
+        name: batchId
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+        description: Batch ID to check classroom capacity against (must be positive)
+      - in: query
+        name: moduleId
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+        description: Module ID to check lecturer assignments against (must be positive)
+      - in: query
+        name: fromDateTime
+        required: true
+        schema:
+          type: string
+          format: date-time
+        description: Start time to check availability (must be aligned to 30-minute slots)
+      - in: query
+        name: toDateTime
+        required: true
+        schema:
+          type: string
+          format: date-time
+        description: End time to check availability (must be aligned to 30-minute slots and after fromDateTime)
+    responses:
+      200:
+        description: Available resources retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lecturers:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/User'
+                  description: List of available lecturers assigned to the module
+                classrooms:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Classroom'
+                  description: List of available classrooms with sufficient capacity
+                equipment:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: Equipment ID
+                      name:
+                        type: string
+                        description: Equipment name
+                      description:
+                        type: string
+                        description: Equipment description
+                      availableQuantity:
+                        type: integer
+                        minimum: 1
+                        description: Quantity available for the time slot
+                  description: List of equipment with available quantities > 0
+      400:
+        description: >
+          Invalid input. Possible reasons:
+          * Missing required parameters
+          * Invalid batch/module IDs (must be positive integers)
+          * Invalid dates (must be valid and fromDateTime before toDateTime)
+          * Times not aligned to 30-minute slots
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      404:
+        description: Batch or module not found
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error' 
