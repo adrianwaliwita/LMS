@@ -263,7 +263,7 @@ const Assignments = () => {
                       </button>
                       {assignment.briefUrl && (
                         <button
-                          onClick={() => downloadBrief(assignment.id)}
+                          onClick={() => console.info(assignment.id)}
                           className="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition flex items-center"
                         >
                           <FiDownload className="mr-1" /> Brief
@@ -318,17 +318,6 @@ const Assignments = () => {
                   </p>
                 </div>
               )}
-
-              {selectedAssignment.briefUrl && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => downloadBrief(selectedAssignment.id)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition flex items-center"
-                  >
-                    <FiDownload className="mr-2" /> Download Assignment Brief
-                  </button>
-                </div>
-              )}
             </div>
 
             {!hasSubmitted(selectedAssignment.id) ? (
@@ -354,6 +343,17 @@ const Assignments = () => {
                           {submissionFile.name}
                         </span>
                       )}
+                    </div>
+                    <div>
+                      <div className="flex items-center mt-2">
+                        <button
+                          onClick={() => downloadBrief(selectedAssignment.id)}
+                          className="cursor-pointer bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg border border-gray-300 transition flex items-center"
+                        >
+                          <FiDownload className="mr-2" />
+                          Download Brief
+                        </button>
+                      </div>
                     </div>
                   </div>
 

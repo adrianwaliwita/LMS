@@ -29,6 +29,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
       { name: "Manage Resources", path: "/manage-resources" }, //can create resources and classrooms
       { name: "Manage Modules", path: "/manage-modules" }, //can create resources and classrooms
+      { name: "Manage Announcements", path: "/manage-announcements" },
 
       { name: "Profile Settings", path: `/profile` },
     ],

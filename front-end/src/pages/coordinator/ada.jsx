@@ -133,33 +133,16 @@ const AssignmentIssuer = () => {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Check file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File size must be less than 5MB");
-        e.target.value = "";
-        return;
-      }
-
-      // Check file type
+      // Check if file is PDF or DOCX
       const validTypes = [
         "application/pdf",
-        "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/zip",
-        "application/x-zip-compressed",
       ];
-      const validExtensions = [".pdf", ".doc", ".docx", ".zip"];
-
-      const fileExtension = file.name.split(".").pop().toLowerCase();
-
-      if (
-        validTypes.includes(file.type) ||
-        validExtensions.includes(`.${fileExtension}`)
-      ) {
+      if (validTypes.includes(file.type)) {
         setSelectedFile(file);
       } else {
-        toast.error("Please upload a PDF, DOC, DOCX, or ZIP file only");
-        e.target.value = "";
+        toast.error("Please upload a PDF or DOCX file only");
+        e.target.value = ""; // Clear the file input
       }
     }
   };
@@ -168,6 +151,7 @@ const AssignmentIssuer = () => {
     setSelectedFile(null);
     document.getElementById("assignmentBriefFile").value = ""; // Clear the file input
   };
+
   const handleUploadBrief = async (assignmentId) => {
     if (!selectedFile) {
       toast.error("Please select a file first");
@@ -190,21 +174,15 @@ const AssignmentIssuer = () => {
         }
       );
 
-      // Update the specific assignment in state
-      setAssignments((prev) =>
-        prev.map((assignment) =>
-          assignment.id === assignmentId ? response.data : assignment
-        )
+      // Refresh assignments list
+      const updatedAssignments = await apiClient.get(
+        "/assignments?includeDetails=true"
       );
-
-      // If viewing the assignment, update it
-      if (selectedAssignment?.id === assignmentId) {
-        setSelectedAssignment(response.data);
-      }
+      setAssignments(updatedAssignments.data);
 
       toast.success("Brief uploaded successfully!");
       setSelectedFile(null);
-      document.getElementById("briefFile").value = "";
+      document.getElementById("file").value = ""; // Clear the file input
     } catch (error) {
       console.error("Error uploading brief:", error);
       toast.error(
@@ -299,35 +277,39 @@ const AssignmentIssuer = () => {
 
     try {
       // First create the assignment
-      const response = await apiClient.post("/assignments", {
+      const jsonPayload = {
         batchId: parseInt(formData.batchId, 10),
         moduleId: parseInt(formData.moduleId, 10),
         title: formData.title.trim(),
         description: formData.description.trim(),
         dueDate: new Date(formData.dueDate).toISOString(),
+      };
+
+      const response = await apiClient.post("/assignments", jsonPayload, {
+        headers: { "Content-Type": "application/json" },
       });
 
-      // Then upload the file if one was selected
+      // If there's a file to upload, upload it now
       if (selectedFile) {
-        const uploadFormData = new FormData();
-        uploadFormData.append("file", selectedFile);
+        const formData = new FormData();
+        formData.append("brief", selectedFile);
 
-        const uploadResponse = await apiClient.post(
+        await apiClient.post(
           `/assignments/${response.data.id}/upload-brief`,
-          uploadFormData,
+          formData,
           {
             headers: {
               "Content-Type": "multipart/form-data",
             },
           }
         );
-
-        // Use the uploaded assignment data
-        response.data = uploadResponse.data;
       }
 
-      // Update assignments list
-      setAssignments((prev) => [response.data, ...prev]);
+      // Refresh assignments list
+      const updatedAssignments = await apiClient.get(
+        "/assignments?includeDetails=true"
+      );
+      setAssignments(updatedAssignments.data);
 
       toast.success("Assignment created successfully!");
       setFormData({
@@ -339,7 +321,7 @@ const AssignmentIssuer = () => {
         dueDate: "",
       });
       setSelectedFile(null);
-      document.getElementById("assignmentBriefFile").value = "";
+      document.getElementById("assignmentBriefFile").value = ""; // Clear the file input
       setActiveTab("view");
     } catch (error) {
       console.error("Error creating assignment:", error);

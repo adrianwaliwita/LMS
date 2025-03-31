@@ -4,7 +4,7 @@ import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { useNavigate } from "react-router-dom";
 
-// Firebase configuration (Replace with your Firebase project config)
+// Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

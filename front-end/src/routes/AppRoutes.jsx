@@ -129,7 +129,7 @@ const AppRoutes = () => {
           <Route
             path="/manage-announcements"
             element={
-              <ProtectedRoute allowedRoles={[ROLE_MAPPING.coordinator]}>
+              <ProtectedRoute allowedRoles={[1, 2]}>
                 <ManageAnnouncements />
               </ProtectedRoute>
             }

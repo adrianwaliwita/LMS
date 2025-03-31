@@ -209,7 +209,7 @@ const AnnouncementManagement = () => {
                 No announcements found matching your criteria.
               </p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 ">
                 {filteredAnnouncements.map((announcement) => (
                   <div
                     key={announcement.id}
@@ -217,7 +217,7 @@ const AnnouncementManagement = () => {
                       announcement.category === "EVENT"
                         ? "border-green-600"
                         : "border-blue-700"
-                    } bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow`}
+                    } bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow `}
                   >
                     <div className="flex justify-between items-start">
                       <h3
@@ -326,7 +326,7 @@ const AnnouncementManagement = () => {
                 </label>
                 <select
                   name="targetBatchId"
-                  value={announcementFormData.targetBatchId || ""}
+                  value={announcementFormData.targetBatchId || null}
                   onChange={handleBatchChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                 >

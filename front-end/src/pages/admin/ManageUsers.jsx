@@ -23,6 +23,7 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [batches, setBatches] = useState([]);
+  const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,20 +38,24 @@ const UserManagement = () => {
     role: "admin",
     departmentId: "",
     batchId: "",
+    assignedModuleIds: [],
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, departmentsRes, batchesRes] = await Promise.all([
-          apiClient.get("/users"),
-          apiClient.get("/departments"),
-          apiClient.get("/batches"),
-        ]);
+        const [usersRes, departmentsRes, batchesRes, modulesRes] =
+          await Promise.all([
+            apiClient.get("/users"),
+            apiClient.get("/departments"),
+            apiClient.get("/batches"),
+            apiClient.get("/modules"),
+          ]);
 
         setUsers(usersRes.data);
         setDepartments(departmentsRes.data);
         setBatches(batchesRes.data);
+        setModules(modulesRes.data);
         setLoading(false);
       } catch (error) {
         setLoading(false);
@@ -64,10 +69,18 @@ const UserManagement = () => {
     fetchData();
   }, []);
 
-  console.log(token);
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setUserFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleModuleSelection = (moduleId) => {
+    setUserFormData((prev) => {
+      const newModuleIds = prev.assignedModuleIds.includes(moduleId)
+        ? prev.assignedModuleIds.filter((id) => id !== moduleId)
+        : [...prev.assignedModuleIds, moduleId];
+      return { ...prev, assignedModuleIds: newModuleIds };
+    });
   };
 
   const handleAddUser = async (e) => {
@@ -82,6 +95,9 @@ const UserManagement = () => {
         ...(userFormData.role === "student" && {
           enrolledBatchId: userFormData.batchId,
         }),
+        ...(userFormData.role === "lecturer" && {
+          assignedModuleIds: userFormData.assignedModuleIds,
+        }),
       };
 
       const response = await apiClient.post("/users", newUser);
@@ -94,6 +110,11 @@ const UserManagement = () => {
         ...(userFormData.role === "student" && {
           enrolledBatch: batches.find(
             (b) => b.id === parseInt(userFormData.batchId)
+          ),
+        }),
+        ...(userFormData.role === "lecturer" && {
+          assignedModules: modules.filter((m) =>
+            userFormData.assignedModuleIds.includes(m.id)
           ),
         }),
       };
@@ -120,9 +141,11 @@ const UserManagement = () => {
         ...(userFormData.role === "student" && {
           batchId: userFormData.batchId,
         }),
+        ...(userFormData.role === "lecturer" && {
+          assignedModuleIds: userFormData.assignedModuleIds,
+        }),
       };
 
-      // Only include password if it was provided
       if (userFormData.password) {
         updatedUser.password = userFormData.password;
       }
@@ -141,6 +164,12 @@ const UserManagement = () => {
         enrolledBatch:
           userFormData.role === "student"
             ? batches.find((b) => b.id === parseInt(userFormData.batchId))
+            : null,
+        assignedModules:
+          userFormData.role === "lecturer"
+            ? modules.filter((m) =>
+                userFormData.assignedModuleIds.includes(m.id)
+              )
             : null,
       };
 
@@ -181,6 +210,7 @@ const UserManagement = () => {
       role: "admin",
       departmentId: "",
       batchId: "",
+      assignedModuleIds: [],
     });
     setIsEditMode(false);
     setShowForm(false);
@@ -297,6 +327,14 @@ const UserManagement = () => {
                         {u.enrolledBatch.name}
                       </p>
                     )}
+                    {u.role === ROLE_MAPPING.lecturer &&
+                      u.assignedModules &&
+                      u.assignedModules.length > 0 && (
+                        <p className="text-gray-700">
+                          <span className="font-semibold">Modules:</span>{" "}
+                          {u.assignedModules.map((m) => m.title).join(", ")}
+                        </p>
+                      )}
                     <div className="mt-3">
                       <button
                         onClick={() => setSelectedUser(u)}
@@ -365,7 +403,6 @@ const UserManagement = () => {
                 />
               </div>
 
-              {/* Only show password field in edit mode */}
               {isEditMode && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -401,24 +438,7 @@ const UserManagement = () => {
                   <option value="student">Student</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department
-                </label>
-                <select
-                  name="departmentId"
-                  value={userFormData.departmentId}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                >
-                  <option value="">Select a Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               {userFormData.role === "student" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -438,6 +458,52 @@ const UserManagement = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+              )}
+              {userFormData.role === "lecturer" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Modules
+                  </label>
+                  <div className="space-y-2 max-h-60 overflow-y-auto p-2 border border-gray-200 rounded-lg">
+                    {modules.map((module) => (
+                      <div key={module.id} className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`module-${module.id}`}
+                          checked={userFormData.assignedModuleIds.includes(
+                            module.id
+                          )}
+                          onChange={() => handleModuleSelection(module.id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label
+                          htmlFor={`module-${module.id}`}
+                          className="ml-2 block text-sm text-gray-700"
+                        >
+                          {module.title}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Department
+                    </label>
+                    <select
+                      name="departmentId"
+                      value={userFormData.departmentId}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                    >
+                      <option value="">Select a Department</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
 
@@ -501,6 +567,17 @@ const UserManagement = () => {
                     {selectedUser.enrolledBatch.name || "Unknown"}
                   </p>
                 )}
+              {selectedUser.role === ROLE_MAPPING.lecturer &&
+                selectedUser.assignedModules && (
+                  <div>
+                    <span className="font-semibold">Assigned Modules:</span>
+                    <ul className="list-disc list-inside mt-1">
+                      {selectedUser.assignedModules.map((module) => (
+                        <li key={module.id}>{module.title}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
@@ -520,6 +597,8 @@ const UserManagement = () => {
                     password: "",
                     departmentId: selectedUser.departmentId || "",
                     batchId: selectedUser.enrolledBatch?.id || "",
+                    assignedModuleIds:
+                      selectedUser.assignedModules?.map((m) => m.id) || [],
                   });
                   setIsEditMode(true);
                   setShowForm(true);
