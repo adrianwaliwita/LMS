@@ -61,7 +61,7 @@ const CourseCompletionVisualization = ({
   };
 
   return (
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-1 gap-4">
+    <div className="mt-4 grid grid-cols-1 md:grid-cols-1 gap-4">
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-semibold text-blue-700 mb-4 text-center">
           Monthly Course Completions
