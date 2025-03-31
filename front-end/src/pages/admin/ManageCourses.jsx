@@ -88,7 +88,12 @@ const CourseManagement = () => {
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      const response = await apiClient.post("/courses", courseFormData);
+      // Convert moduleIds to numbers
+      const formData = {
+        ...courseFormData,
+        moduleIds: courseFormData.moduleIds.map((id) => Number(id)),
+      };
+      const response = await apiClient.post("/courses", formData);
       setCourses([...courses, response.data]);
       resetForm();
       toast.success(`Course ${courseFormData.title} created successfully`);
@@ -102,9 +107,14 @@ const CourseManagement = () => {
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
     try {
+      // Convert moduleIds to numbers
+      const formData = {
+        ...courseFormData,
+        moduleIds: courseFormData.moduleIds.map((id) => Number(id)),
+      };
       const response = await apiClient.patch(
         `/courses/${selectedCourse.id}`,
-        courseFormData
+        formData
       );
 
       const updatedCourses = courses.map((course) =>

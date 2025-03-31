@@ -1,106 +1,128 @@
 import React, { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation } from "swiper/modules";
 import "swiper/css";
-import axios from "axios";
+import "swiper/css/navigation";
 import apiClient from "../api/apiClient";
-const baseUrl = import.meta.env.VITE_BASE_URL;
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 function Announcements() {
   const [announcements, setAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [swiperInstance, setSwiperInstance] = useState(null);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         const response = await apiClient.get("/announcements");
         setAnnouncements(response.data);
-        setIsLoading(false);
       } catch (error) {
+        setError(
+          error.response?.data?.message || "Failed to fetch announcements"
+        );
+      } finally {
         setIsLoading(false);
-        const errorMessage =
-          error.response?.data?.message || "Failed to fetch announcements";
-        setError(errorMessage);
-        toast.error(errorMessage);
       }
     };
 
     fetchAnnouncements();
   }, []);
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
   if (isLoading) {
-    return <div className="text-center p-4">Loading announcements...</div>;
+    return (
+      <div className="min-h-[300px] flex items-center justify-center text-blue-700">
+        Loading announcements...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
+    return (
+      <div className="min-h-[300px] flex items-center justify-center">
+        <div className="text-red-500 p-4 text-center border-2 border-red-500 rounded-lg bg-red-50 max-w-[70vw]">
+          {error}
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex justify-start">
-      <div className="max-w-[70vw] pt-8">
-        <h2 className="text-2xl font-bold mb-6">University Announcements</h2>
+    <div className="min-h-[300px] flex justify-start ">
+      <div className="max-w-[70vw] pt-8 w-full">
+        <h2 className="text-2xl font-bold mb-6 text-blue-700">
+          University Announcements
+        </h2>
+
         {announcements.length === 0 ? (
-          <p className="text-gray-500">No announcements at this time.</p>
+          <div className="min-h-[200px] border-2 border-blue-700 rounded-lg p-6 text-center bg-white flex items-center justify-center">
+            <p className="text-gray-500">No announcements at this time.</p>
+          </div>
         ) : (
-          <Swiper
-            onSwiper={setSwiperInstance}
-            spaceBetween={20}
-            slidesPerView={1}
-            breakpoints={{
-              640: { slidesPerView: 2, spaceBetween: 20 },
-              1024: { slidesPerView: 3, spaceBetween: 30 },
-            }}
-          >
-            {announcements.map((announcement) => (
-              <SwiperSlide key={announcement.id}>
-                <div className="border bg-blue-700 md:min-h-[40vh] xl:min-h-[20vh] border-slate-200 rounded-lg p-4 shadow-sm flex flex-col">
-                  <h2 className="text-lg font-bold mb-2 text-white">
-                    {announcement.title}
-                  </h2>
-
-                  <div className="mb-2 text-sm text-white">
-                    <span className="font-semibold">Posted:</span>{" "}
-                    {new Date(announcement.createdAt).toLocaleDateString()}
-                  </div>
-
-                  <div className="mb-3 text-white">
-                    <p className="text-sm">{announcement.content}</p>
-                  </div>
-
-                  <div className="mt-auto text-sm text-white">
-                    <div className="mb-1">
-                      <span className="font-semibold">Category:</span>{" "}
-                      {announcement.category}
+          <div className="relative min-h-[250px]">
+            <Swiper
+              modules={[Navigation]}
+              spaceBetween={20}
+              slidesPerView={1}
+              breakpoints={{
+                640: { slidesPerView: 2 },
+                1024: { slidesPerView: 3 },
+              }}
+              navigation={{
+                nextEl: ".announcement-next",
+                prevEl: ".announcement-prev",
+              }}
+            >
+              {announcements.map((announcement) => (
+                <SwiperSlide key={announcement.id}>
+                  <div className="border-2 border-blue-700 rounded-lg p-4 shadow-sm bg-blue-700 h-full flex flex-col min-h-[250px]">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-lg font-bold text-white">
+                        {announcement.title}
+                      </h3>
                     </div>
-                    {announcement.date && (
-                      <div className="font-bold">
-                        <span className="font-bold">Event Date:</span>{" "}
-                        {announcement.date}
+
+                    <div className="mb-3 text-white text-sm flex-grow">
+                      <p className="line-clamp-4">{announcement.content}</p>
+                    </div>
+
+                    <div className="mt-auto text-white text-xs">
+                      <div className="mb-1">
+                        <span className="font-semibold">Posted:</span>{" "}
+                        {formatDate(announcement.createdAt)}
                       </div>
-                    )}
+                      {announcement.date && (
+                        <div>
+                          <span className="font-semibold">Event Date:</span>{" "}
+                          {formatDate(announcement.date)}
+                        </div>
+                      )}
+                      <span className="text-xs text-blue-100  py-1 rounded">
+                        {announcement.category}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            <div className="flex justify-end mt-4 space-x-2">
+              <button className="announcement-prev bg-white border-2 border-blue-700 p-2 rounded-lg shadow hover:bg-blue-50">
+                <FiChevronLeft className="h-5 w-5 text-blue-700" />
+              </button>
+              <button className="announcement-next bg-white border-2 border-blue-700 p-2 rounded-lg shadow hover:bg-blue-50">
+                <FiChevronRight className="h-5 w-5 text-blue-700" />
+              </button>
+            </div>
+          </div>
         )}
-        {/* Navigation Buttons Container */}
-        <div className="flex justify-end mt-4 space-x-2">
-          <button
-            onClick={() => swiperInstance && swiperInstance.slidePrev()}
-            className="bg-white border-blue-600 px-4 py-2 rounded shadow"
-          >
-            ❮
-          </button>
-          <button
-            onClick={() => swiperInstance && swiperInstance.slideNext()}
-            className="bg-white border-blue-600 px-4 py-2 rounded shadow"
-          >
-            ❯
-          </button>
-        </div>
       </div>
     </div>
   );

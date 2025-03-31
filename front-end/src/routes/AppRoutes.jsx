@@ -2,7 +2,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
-import Modules from "../pages/student/Modules";
+import MyModules from "../pages/student/MyModules";
 import Profile from "../pages/Profile";
 import SubmitAssignments from "../pages/student/SubmitAssignments";
 import Layout from "../layout/Layout";
@@ -21,7 +21,7 @@ const AppRoutes = () => {
     <Router>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/modules" element={<Modules />} />
+          <Route path="/modules" element={<MyModules />} />
           <Route path="/manage-batches" element={<ManageBatches />} />
           <Route path="/manage-courses" element={<ManageCourses />} />
           <Route path="/manage-resources" element={<ManageResources />} />

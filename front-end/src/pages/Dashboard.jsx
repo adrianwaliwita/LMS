@@ -1,7 +1,7 @@
 import Sidebar from "../components/Sidebar";
 import HeaderDesktop from "../components/HeaderDesktop";
 import { useAuth } from "../context/AuthContext";
-import Schedule from "../components/MiniSchedule";
+import Schedule from "../components/Schedule";
 import NavlayOut from "../layout/NavLayout";
 import Announcements from "../components/Announcements";
 import AdminDashboard from "./admin/AdminDashboard";

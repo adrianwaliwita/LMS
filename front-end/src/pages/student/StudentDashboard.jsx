@@ -1,4 +1,4 @@
-import Schedule from "../../components/MiniSchedule";
+import Schedule from "../../components/Schedule";
 import Announcements from "../../components/Announcements";
 const StudentDashboard = () => {
   return (

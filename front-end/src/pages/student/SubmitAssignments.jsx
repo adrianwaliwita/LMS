@@ -162,14 +162,14 @@ const Assignments = () => {
     return <div className="text-center p-8">Loading assignments...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen ">
       <ToastContainer position="top-right" autoClose={5000} />
 
-      <div className="bg-blue-700 text-white p-4 shadow">
+      <header className="bg-blue-700 text-white p-4 shadow rounded-xl mb-6">
         <div className="container mx-auto">
           <h1 className="text-2xl font-bold">Assignments</h1>
         </div>
-      </div>
+      </header>
 
       <div className="container mx-auto p-4">
         {error && (
