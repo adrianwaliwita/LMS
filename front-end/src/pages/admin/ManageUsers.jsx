@@ -411,7 +411,7 @@ const UserManagement = () => {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
                 >
-                  <option value="">Select a department</option>
+                  <option value="">Select a Department</option>
                   {departments.map((dept) => (
                     <option key={dept.id} value={dept.id}>
                       {dept.name}

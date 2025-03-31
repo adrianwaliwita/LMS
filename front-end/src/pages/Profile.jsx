@@ -233,14 +233,7 @@ const Profile = () => {
                     {formData.roleName}
                   </div>
                 </div>
-                {!isEditing && activeTab === "general" && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
-                  >
-                    Edit Profile
-                  </button>
-                )}
+
                 {!isEditingPassword && activeTab === "security" && (
                   <button
                     onClick={() => setIsEditingPassword(true)}

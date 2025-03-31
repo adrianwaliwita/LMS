@@ -6,13 +6,13 @@ import { useNavigate } from "react-router-dom";
 
 // Firebase configuration (Replace with your Firebase project config)
 const firebaseConfig = {
-  apiKey: "AIzaSyBGYJCJROiRdOaTDEogVeLNwWDqV7tZCLE",
-  authDomain: "ashbourne-scms.firebaseapp.com",
-  projectId: "ashbourne-scms",
-  storageBucket: "ashbourne-scms.firebasestorage.app",
-  messagingSenderId: "292636467871",
-  appId: "1:292636467871:web:9332748da214ef4baab8aa",
-  measurementId: "G-CJD9TNVT9L",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
