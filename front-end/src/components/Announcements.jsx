@@ -5,17 +5,20 @@ import "swiper/css";
 import "swiper/css/navigation";
 import apiClient from "../api/apiClient";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { useAuth } from "../context/AuthContext";
 
 function Announcements() {
-  const [announcements, setAnnouncements] = useState([]);
+  const [allAnnouncements, setAllAnnouncements] = useState([]);
+  const [filteredAnnouncements, setFilteredAnnouncements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       try {
         const response = await apiClient.get("/announcements");
-        setAnnouncements(response.data);
+        setAllAnnouncements(response.data);
       } catch (error) {
         setError(
           error.response?.data?.message || "Failed to fetch announcements"
@@ -27,6 +30,21 @@ function Announcements() {
 
     fetchAnnouncements();
   }, []);
+
+  useEffect(() => {
+    if (allAnnouncements.length > 0) {
+      const filtered = allAnnouncements.filter((announcement) => {
+        // Show announcement if:
+        // 1. It has no target batch (null/undefined), OR
+        // 2. User has a matching enrolledBatch.id
+        return (
+          announcement.targetBatchId == null ||
+          user?.enrolledBatch?.id === announcement.targetBatchId
+        );
+      });
+      setFilteredAnnouncements(filtered);
+    }
+  }, [allAnnouncements, user]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -55,15 +73,17 @@ function Announcements() {
   }
 
   return (
-    <div className="min-h-[300px] flex justify-start ">
+    <div className="min-h-[300px] flex justify-start">
       <div className="max-w-[70vw] pt-8 w-full">
         <h2 className="text-2xl font-bold mb-6 text-blue-700">
           University Announcements
         </h2>
 
-        {announcements.length === 0 ? (
+        {filteredAnnouncements.length === 0 ? (
           <div className="min-h-[200px] border-2 border-blue-700 rounded-lg p-6 text-center bg-white flex items-center justify-center">
-            <p className="text-gray-500">No announcements at this time.</p>
+            <p className="text-gray-500">
+              No announcements available for you at this time.
+            </p>
           </div>
         ) : (
           <div className="relative min-h-[250px]">
@@ -80,7 +100,7 @@ function Announcements() {
                 prevEl: ".announcement-prev",
               }}
             >
-              {announcements.map((announcement) => (
+              {filteredAnnouncements.map((announcement) => (
                 <SwiperSlide key={announcement.id}>
                   <div className="border-2 border-blue-700 rounded-lg p-4 shadow-sm bg-blue-700 h-full flex flex-col min-h-[250px]">
                     <div className="flex justify-between items-start mb-2">
@@ -104,9 +124,14 @@ function Announcements() {
                           {formatDate(announcement.date)}
                         </div>
                       )}
-                      <span className="text-xs text-blue-100  py-1 rounded">
+                      <span className="text-xs text-blue-100 py-1 rounded">
                         {announcement.category}
                       </span>
+                      {announcement.targetBatchId && (
+                        <div className="text-xs text-blue-200 mt-1">
+                          (For Batch: {announcement.targetBatchId})
+                        </div>
+                      )}
                     </div>
                   </div>
                 </SwiperSlide>
