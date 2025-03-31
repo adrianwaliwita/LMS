@@ -37,6 +37,7 @@ const CourseManagement = () => {
     description: "",
     category: 1,
     level: 1,
+    price: null,
     departmentId: "",
     moduleIds: [],
   });
@@ -70,7 +71,7 @@ const CourseManagement = () => {
     const { name, value } = e.target;
     setCourseFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: value === "" ? null : value,
     }));
   };
 
@@ -88,10 +89,11 @@ const CourseManagement = () => {
   const handleCreateCourse = async (e) => {
     e.preventDefault();
     try {
-      // Convert moduleIds to numbers
+      // Convert moduleIds to numbers and price to number or null
       const formData = {
         ...courseFormData,
         moduleIds: courseFormData.moduleIds.map((id) => Number(id)),
+        price: courseFormData.price ? Number(courseFormData.price) : null,
       };
       const response = await apiClient.post("/courses", formData);
       setCourses([...courses, response.data]);
@@ -107,10 +109,11 @@ const CourseManagement = () => {
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
     try {
-      // Convert moduleIds to numbers
+      // Convert moduleIds to numbers and price to number or null
       const formData = {
         ...courseFormData,
         moduleIds: courseFormData.moduleIds.map((id) => Number(id)),
+        price: courseFormData.price ? Number(courseFormData.price) : null,
       };
       const response = await apiClient.patch(
         `/courses/${selectedCourse.id}`,
@@ -152,6 +155,7 @@ const CourseManagement = () => {
       description: "",
       category: 1,
       level: 1,
+      price: null,
       departmentId: "",
       moduleIds: [],
     });
@@ -165,6 +169,7 @@ const CourseManagement = () => {
       description: course.description,
       category: course.category,
       level: course.level,
+      price: course.price,
       departmentId: course.departmentId,
       moduleIds: course.modules?.map((m) => m.id) || [],
     });
@@ -274,8 +279,10 @@ const CourseManagement = () => {
                       {COURSE_LEVELS[course.level] || "Unknown"}
                     </p>
                     <p className="text-gray-700">
-                      <span className="font-semibold">Department:</span>{" "}
-                      {course.department?.name || "Unknown"}
+                      <span className="font-semibold">Price:</span>{" "}
+                      {course.price === null
+                        ? "Free"
+                        : `$${course.price.toFixed(2)}`}
                     </p>
                     <div className="mt-3">
                       <button
@@ -363,6 +370,21 @@ const CourseManagement = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Price (leave empty for free)
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  min="0"
+                  step="0.01"
+                  value={courseFormData.price || ""}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                  placeholder="Enter price (0 for free)"
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -456,6 +478,12 @@ const CourseManagement = () => {
                   <p>
                     <span className="font-semibold">Department:</span>{" "}
                     {selectedCourse.department?.name || "Unknown"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Price:</span>{" "}
+                    {selectedCourse.price === null
+                      ? "Free"
+                      : `$${selectedCourse.price.toFixed(2)}`}
                   </p>
                 </div>
               </div>
