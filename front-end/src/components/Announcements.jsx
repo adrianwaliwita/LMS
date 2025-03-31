@@ -102,7 +102,7 @@ function Announcements() {
             >
               {filteredAnnouncements.map((announcement) => (
                 <SwiperSlide key={announcement.id}>
-                  <div className="border-2 border-blue-700 rounded-lg p-4 shadow-sm bg-blue-700 h-full flex flex-col min-h-[250px]">
+                  <div className="border-2 border-blue-700 rounded-lg p-4 shadow-sm bg-blue-700 h-full flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-bold text-white">
                         {announcement.title}

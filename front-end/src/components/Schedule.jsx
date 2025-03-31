@@ -137,20 +137,6 @@ const Schedule = () => {
                       <span className="text-gray-500">Not specified</span>
                     )}
                   </div>
-
-                  {lecture.reservedEquipment?.length > 0 && (
-                    <div className="mt-1 flex flex-wrap gap-2 items-center text-sm">
-                      <span className="font-medium">Equipment:</span>
-                      {lecture.reservedEquipment.map((equip) => (
-                        <span
-                          key={equip.id}
-                          className="bg-gray-100 text-gray-800 px-2 py-1 rounded"
-                        >
-                          {equip.name} ({equip.quantity})
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </li>
             ))}
