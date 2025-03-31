@@ -506,28 +506,29 @@ const UserManagement = () => {
                   </div>
                 </div>
               )}
-              {userFormData.role === "coordinator" && (
-                <div>
+              {userFormData.role === "coordinator" ||
+                (userFormData.role === "admin" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Department
-                    </label>
-                    <select
-                      name="departmentId"
-                      value={userFormData.departmentId}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
-                    >
-                      <option value="">Select a Department</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                      </label>
+                      <select
+                        name="departmentId"
+                        value={userFormData.departmentId}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-blue-700 focus:outline-none"
+                      >
+                        <option value="">Select a Department</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
 
               <div className="flex justify-end gap-4 mt-6">
                 <button
