@@ -2,11 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
 const Header = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   // Mobile menu items based on user role
   const mobileMenuItems = {
@@ -130,6 +136,12 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
+          <button
+            onClick={handleLogout}
+            className="w-full text-left block py-3 px-4 border-t border-blue-700 bg-red-800 hover:bg-blue-800  transition-colors duration-150"
+          >
+            Logout
+          </button>
         </div>
       </div>
 

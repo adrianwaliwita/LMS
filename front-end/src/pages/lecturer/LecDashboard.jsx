@@ -74,9 +74,7 @@ const LecDashboard = () => {
       <div className="container mx-auto flex flex-col flex-grow p-4">
         {/* User Visualizations */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AdminVisualizations users={users} roleMap={roleMap} />
-
-          <CourseVisualizations
+          <CourseCompletionVisualization
             courses={courses}
             modules={modules}
             users={users}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Logo from "/SMSC.png";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +7,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, user, token, loading } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -29,16 +29,21 @@ const Login = () => {
   };
 
   return (
-    <div className="py-16">
-      <div className="flex bg-white rounded-lg shadow-lg overflow-hidden mx-auto max-w-sm lg:max-w-4xl min-h-[80vh]">
-        <div className="hidden lg:block lg:w-1/2 bg-cover relative bg-gradient-to-l from-[#0008BF] to-[#164beb]">
-          <img
-            src={Logo}
-            alt="Logo"
-            className="absolute inset-0 m-auto max-w-full max-h-full object-contain"
-          />
+    <div className="flex items-center justify-center min-h-screen py-16">
+      <div className="flex bg-white rounded-lg shadow-lg overflow-hidden mx-auto max-w-sm lg:max-w-4xl">
+        {/* Logo section - fixed height in desktop */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-l from-[#0008BF] to-[#164beb] items-center justify-center h-[500px]">
+          <div className="flex items-center justify-center w-full h-full p-8">
+            <img
+              src={Logo}
+              alt="Logo"
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
         </div>
-        <div className="w-full p-8 lg:w-1/2 flex flex-col justify-center">
+
+        {/* Form section - matching height */}
+        <div className="w-full p-8 lg:w-1/2 flex flex-col justify-center h-[500px]">
           <h2 className="text-2xl font-semibold text-gray-700 text-center">
             Ashbourne Smart Campus
           </h2>
@@ -50,8 +55,8 @@ const Login = () => {
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mt-4">
+          <form onSubmit={handleSubmit} className="mt-4">
+            <div className="mb-4">
               <label className="block text-gray-700 text-sm font-bold mb-2">
                 Email Address
               </label>
@@ -63,7 +68,7 @@ const Login = () => {
                 required
               />
             </div>
-            <div className="mt-4">
+            <div className="mb-6">
               <div className="flex justify-between">
                 <label className="block text-gray-700 text-sm font-bold mb-2">
                   Password
@@ -80,7 +85,7 @@ const Login = () => {
                 required
               />
             </div>
-            <div className="mt-8">
+            <div>
               <button
                 className="cursor-pointer bg-gradient-to-l from-[#0008BF] to-[#164beb] text-white font-bold py-2 px-4 w-full rounded hover:bg-gray-600"
                 type="submit"

@@ -15,6 +15,7 @@ import ScheduleLectures from "../pages/coordinator/ScheduleLectures";
 import ManageAssignments from "../pages/coordinator/ManageAssignments";
 import ManageStudents from "../pages/coordinator/ManageStudents";
 import ManageAnnouncements from "../pages/coordinator/ManageAnnouncements";
+import Manageclasses from "../pages/lecturer/ManageClasses";
 const AppRoutes = () => {
   return (
     <Router>
@@ -28,6 +29,7 @@ const AppRoutes = () => {
           <Route path="/manage-modules" element={<ManageModules />} />
           <Route path="/assignment" element={<SubmitAssignments />} />
           <Route path="/schedule-lectures" element={<ScheduleLectures />} />
+          <Route path="/manage-classes" element={<Manageclasses />} />
 
           <Route path="/manage-students" element={<ManageStudents />} />
           <Route

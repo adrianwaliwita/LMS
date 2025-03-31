@@ -48,7 +48,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
     3: [
       { name: "Home", path: "/dashboard" },
-      { name: "Class Schedules", path: "/scheduling" }, //linked to modules from students all documents are uploaded from the coordinator
+      { name: "My Classes", path: "/manage-classes" }, //linked to modules from students all documents are uploaded from the coordinator
       { name: "Profile Settings", path: `/profile` },
     ],
 

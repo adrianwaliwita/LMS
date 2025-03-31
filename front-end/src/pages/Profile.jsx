@@ -4,6 +4,20 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiClient from "../api/apiClient";
 
+const ROLE_MAPPING = {
+  admin: 1,
+  coordinator: 2,
+  lecturer: 3,
+  student: 4,
+};
+
+const REVERSE_ROLE_MAPPING = {
+  1: "admin",
+  2: "coordinator",
+  3: "lecturer",
+  4: "student",
+};
+
 const Profile = () => {
   const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -11,6 +25,8 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState("general");
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [batches, setBatches] = useState([]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -33,11 +49,18 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const fetchData = async () => {
       try {
         if (user) {
-          const response = await apiClient.get(`/users/${user.id}`);
-          const userData = response.data;
+          const [profileRes, departmentsRes, batchesRes] = await Promise.all([
+            apiClient.get(`/users/${user.id}`),
+            apiClient.get("/departments"),
+            user.role === ROLE_MAPPING.student
+              ? apiClient.get("/batches")
+              : Promise.resolve(null),
+          ]);
+
+          const userData = profileRes.data;
           setFormData({
             firstName: userData.firstName || "",
             lastName: userData.lastName || "",
@@ -51,6 +74,11 @@ const Profile = () => {
             createdAt: userData.createdAt || "",
             updatedAt: userData.updatedAt || "",
           });
+
+          setDepartments(departmentsRes.data);
+          if (batchesRes) {
+            setBatches(batchesRes.data);
+          }
         }
         setLoading(false);
       } catch (error) {
@@ -62,7 +90,7 @@ const Profile = () => {
       }
     };
 
-    fetchProfileData();
+    fetchData();
   }, [user]);
 
   const handleInputChange = (e) => {
@@ -87,6 +115,9 @@ const Profile = () => {
         firstName: formData.firstName,
         lastName: formData.lastName,
         departmentId: formData.departmentId,
+        ...(formData.role === ROLE_MAPPING.student && {
+          batchId: formData.enrolledBatch?.id || null,
+        }),
       };
 
       const response = await apiClient.patch(`/users/${user.id}`, updatedData);
@@ -110,16 +141,10 @@ const Profile = () => {
     }
 
     try {
-      await apiClient.post(`/users/${user.id}/change-password`, {
+      await apiClient.patch(`/users/${user.id}`, {
         currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
+        password: passwordData.newPassword,
       });
-      // Or alternatively:
-      // await apiClient.post(`/users/change-password`, {
-      //   userId: user.id,
-      //   currentPassword: passwordData.currentPassword,
-      //   newPassword: passwordData.newPassword,
-      // });
 
       toast.success("Password updated successfully");
       setIsEditingPassword(false);
@@ -134,6 +159,7 @@ const Profile = () => {
       toast.error(errorMessage);
     }
   };
+
   const handleCancelEdit = () => {
     setIsEditing(false);
     // Reset form data to original values
@@ -249,18 +275,6 @@ const Profile = () => {
           >
             Security
           </button>
-          {formData.role === 2 && ( // Assuming role 2 is lecturer
-            <button
-              className={`py-3 px-6 font-medium ${
-                activeTab === "modules"
-                  ? "text-blue-700 border-b-2 border-blue-700"
-                  : "text-gray-600"
-              }`}
-              onClick={() => setActiveTab("modules")}
-            >
-              Modules
-            </button>
-          )}
         </div>
 
         <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
@@ -271,7 +285,7 @@ const Profile = () => {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {isEditing && (
+                {isEditing ? (
                   <>
                     <div>
                       <label className="block text-gray-700 font-medium mb-2">
@@ -300,6 +314,21 @@ const Profile = () => {
                       />
                     </div>
                   </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        First Name
+                      </label>
+                      <p>{formData.firstName}</p>
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Last Name
+                      </label>
+                      <p>{formData.lastName}</p>
+                    </div>
+                  </>
                 )}
                 <div>
                   <label className="block text-gray-700 font-medium mb-2">
@@ -319,9 +348,11 @@ const Profile = () => {
                       className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="0">Select Department</option>
-                      <option value="1">Computer Science</option>
-                      <option value="2">Engineering</option>
-                      <option value="3">Business</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     <p>
@@ -341,14 +372,38 @@ const Profile = () => {
                   </label>
                   <p>{new Date(formData.updatedAt).toLocaleDateString()}</p>
                 </div>
-                {formData.enrolledBatch && (
-                  <div>
-                    <label className="block text-gray-700 font-medium mb-2">
-                      Batch
-                    </label>
-                    <p>{formData.enrolledBatch.name}</p>
-                  </div>
-                )}
+                {formData.role === ROLE_MAPPING.student &&
+                  formData.enrolledBatch && (
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Batch
+                      </label>
+                      {isEditing ? (
+                        <select
+                          name="batchId"
+                          value={formData.enrolledBatch?.id || ""}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              enrolledBatch: batches.find(
+                                (b) => b.id === parseInt(e.target.value)
+                              ),
+                            })
+                          }
+                          className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select Batch</option>
+                          {batches.map((batch) => (
+                            <option key={batch.id} value={batch.id}>
+                              {batch.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p>{formData.enrolledBatch.name}</p>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {isEditing && (
@@ -440,45 +495,46 @@ const Profile = () => {
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                   <p className="text-blue-800">
                     Password last changed:{" "}
-                    {new Date(user.updatedAt).toLocaleDateString()}
+                    {new Date(formData.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {activeTab === "modules" && formData.role === 2 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-blue-700">
-                Assigned Modules
-              </h3>
+          {activeTab === "modules" &&
+            formData.role === ROLE_MAPPING.lecturer && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-blue-700">
+                  Assigned Modules
+                </h3>
 
-              {formData.assignedModules.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {formData.assignedModules.map((module) => (
-                    <div
-                      key={module.id}
-                      className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
-                    >
-                      <h3 className="text-lg font-semibold text-blue-700">
-                        {module.name}
-                      </h3>
-                      <p className="text-gray-700 mt-2">
-                        <span className="font-semibold">Code:</span>{" "}
-                        {module.code}
-                      </p>
-                      <p className="text-gray-700">
-                        <span className="font-semibold">Credit Hours:</span>{" "}
-                        {module.creditHours}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No modules assigned</p>
-              )}
-            </div>
-          )}
+                {formData.assignedModules.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {formData.assignedModules.map((module) => (
+                      <div
+                        key={module.id}
+                        className="border-2 border-blue-700 bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow"
+                      >
+                        <h3 className="text-lg font-semibold text-blue-700">
+                          {module.name}
+                        </h3>
+                        <p className="text-gray-700 mt-2">
+                          <span className="font-semibold">Code:</span>{" "}
+                          {module.code}
+                        </p>
+                        <p className="text-gray-700">
+                          <span className="font-semibold">Credit Hours:</span>{" "}
+                          {module.creditHours}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No modules assigned</p>
+                )}
+              </div>
+            )}
         </div>
       </div>
     </div>

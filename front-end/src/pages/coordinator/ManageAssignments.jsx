@@ -3,6 +3,7 @@ import { useAuth } from "../../context/AuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import apiClient from "../../api/apiClient";
+import { FiDownload, FiEye, FiArrowLeft, FiFileText } from "react-icons/fi";
 
 const AssignmentIssuer = () => {
   const { user } = useAuth();
@@ -14,7 +15,9 @@ const AssignmentIssuer = () => {
   const [assignments, setAssignments] = useState([]);
   const [filteredModules, setFilteredModules] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("create"); // 'create' or 'view'
+  const [activeTab, setActiveTab] = useState("create");
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
 
   const [formData, setFormData] = useState({
     batchId: "",
@@ -23,8 +26,17 @@ const AssignmentIssuer = () => {
     title: "",
     description: "",
     dueDate: "",
-    briefFile: null,
   });
+
+  const fetchStudentDetails = async (studentId) => {
+    try {
+      const response = await apiClient.get(`/users/${studentId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching student details:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,7 +51,6 @@ const AssignmentIssuer = () => {
         setCourses(coursesRes.data);
         setAssignments(assignmentsRes.data);
 
-        // Extract all modules from courses
         const allModules = coursesRes.data.flatMap(
           (course) =>
             course.modules?.map((module) => ({
@@ -75,13 +86,39 @@ const AssignmentIssuer = () => {
     }
   }, [formData.courseId, modules]);
 
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      if (selectedAssignment) {
+        try {
+          const response = await apiClient.get(
+            `/assignments/${selectedAssignment.id}/submissions`
+          );
+
+          const submissionsWithStudents = await Promise.all(
+            response.data.map(async (submission) => {
+              if (submission.studentId) {
+                const student = await fetchStudentDetails(submission.studentId);
+                return { ...submission, student };
+              }
+              return submission;
+            })
+          );
+
+          setSubmissions(submissionsWithStudents);
+        } catch (error) {
+          toast.error(
+            error.response?.data?.message || "Failed to fetch submissions"
+          );
+        }
+      }
+    };
+
+    fetchSubmissions();
+  }, [selectedAssignment]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    setFormData((prev) => ({ ...prev, briefFile: e.target.files[0] }));
   };
 
   const handleSubmit = async (e) => {
@@ -101,22 +138,6 @@ const AssignmentIssuer = () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      const assignmentId = response.data.id;
-
-      if (formData.briefFile) {
-        const fileFormData = new FormData();
-        fileFormData.append("file", formData.briefFile);
-
-        await apiClient.post(
-          `/assignments/${assignmentId}/upload-brief`,
-          fileFormData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          }
-        );
-      }
-
-      // Refresh assignments list
       const updatedAssignments = await apiClient.get(
         "/assignments?includeDetails=true"
       );
@@ -130,32 +151,15 @@ const AssignmentIssuer = () => {
         title: "",
         description: "",
         dueDate: "",
-        briefFile: null,
       });
-      setActiveTab("view"); // Switch to view tab after creation
+      setActiveTab("view");
     } catch (error) {
-      console.error("Error creating assignment:", error); // Log full error object
-
-      if (error.response) {
-        // Server responded with a status code outside 2xx
-        console.error("Response Data:", error.response.data);
-        console.error("Status Code:", error.response.status);
-        console.error("Headers:", error.response.headers);
-
-        toast.error(
-          error.response.data?.message ||
-            error.response.data?.error ||
-            `Server error: ${error.response.status}`
-        );
-      } else if (error.request) {
-        // Request was made but no response was received
-        console.error("No response received:", error.request);
-        toast.error("No response from server. Please try again.");
-      } else {
-        // Something else happened (e.g., network error)
-        console.error("Request error:", error.message);
-        toast.error("Unexpected error occurred.");
-      }
+      console.error("Error creating assignment:", error);
+      toast.error(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to create assignment"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -172,37 +176,80 @@ const AssignmentIssuer = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  const downloadBrief = async (assignmentId) => {
+  const downloadSubmission = async (submissionId) => {
     try {
       const response = await apiClient.get(
-        `/assignments/${assignmentId}/download-brief`,
-        {
-          responseType: "blob",
-        }
+        `/assignments/${selectedAssignment.id}/submissions/${submissionId}/download`,
+        { responseType: "blob" }
       );
 
-      // Extract filename from content-disposition header
       const contentDisposition = response.headers["content-disposition"];
-      let filename = "assignment_brief.pdf";
+      let filename = `submission-${submissionId}`;
+
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        const filenameMatch = contentDisposition.match(
+          /filename\*?=['"]?(?:UTF-\d['"]*)?([^;\r\n"']*)['"]?;?/i
+        );
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1];
         }
       }
 
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const contentType = response.headers["content-type"];
+      let extension = "";
+
+      if (contentType.includes("pdf")) {
+        extension = "pdf";
+      } else if (
+        contentType.includes(
+          "vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+      ) {
+        extension = "docx";
+      } else if (contentType.includes("msword")) {
+        extension = "doc";
+      }
+
+      if (!extension) {
+        const filenameExt = filename.split(".").pop().toLowerCase();
+        if (["pdf", "docx", "doc"].includes(filenameExt)) {
+          extension = filenameExt;
+        }
+      }
+
+      if (!extension) {
+        const blobStart = await response.data.slice(0, 4).text();
+
+        if (blobStart.includes("%PDF")) {
+          extension = "pdf";
+        } else if (blobStart.startsWith("PK")) {
+          extension = "docx";
+        } else {
+          extension = "pdf";
+        }
+      }
+
+      filename = filename.replace(/\.[^/.]+$/, "");
+      filename = `${filename}.${extension}`;
+
+      const blob = new Blob([response.data], {
+        type: contentType || "application/octet-stream",
+      });
+      const url = window.URL.createObjectURL(blob);
+
       const link = document.createElement("a");
       link.href = url;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
-      link.remove();
+
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     } catch (error) {
       toast.error(
-        "Failed to download brief: " +
-          (error.response?.data?.message || "File not found")
+        error.response?.data?.message || "Failed to download submission"
       );
     }
   };
@@ -219,259 +266,401 @@ const AssignmentIssuer = () => {
           <h1 className="text-2xl font-bold">Assignment Management</h1>
         </header>
 
-        <div className="flex border-b border-gray-200 mb-6">
-          <button
-            className={`py-3 px-6 font-medium ${
-              activeTab === "create"
-                ? "text-blue-700 border-b-2 border-blue-700"
-                : "text-gray-600"
-            }`}
-            onClick={() => setActiveTab("create")}
-          >
-            Create Assignment
-          </button>
-          <button
-            className={`py-3 px-6 font-medium ${
-              activeTab === "view"
-                ? "text-blue-700 border-b-2 border-blue-700"
-                : "text-gray-600"
-            }`}
-            onClick={() => setActiveTab("view")}
-          >
-            View Assignments ({assignments.length})
-          </button>
-        </div>
-
-        {activeTab === "create" ? (
+        {selectedAssignment ? (
           <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Form fields remain the same as before */}
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Batch
-                  </label>
-                  <select
-                    name="batchId"
-                    value={formData.batchId}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Batch</option>
-                    {batches.map((batch) => (
-                      <option key={batch.id} value={batch.id}>
-                        {batch.name} (
-                        {new Date(batch.startDate).toLocaleDateString()} -{" "}
-                        {new Date(batch.endDate).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <button
+              onClick={() => setSelectedAssignment(null)}
+              className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            >
+              <FiArrowLeft className="mr-1" /> Back to Assignments
+            </button>
 
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Course
-                  </label>
-                  <select
-                    name="courseId"
-                    value={formData.courseId}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Select Course</option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={course.id}>
-                        {course.title} ({course.levelName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <h2 className="text-xl font-bold text-blue-700 mb-2">
+              {selectedAssignment.title}
+            </h2>
+            <div className="mb-4 text-gray-600">
+              <p>
+                <span className="font-medium">Module:</span>{" "}
+                {selectedAssignment.module?.title || "N/A"}
+              </p>
+              <p>
+                <span className="font-medium">Batch:</span>{" "}
+                {selectedAssignment.batch?.name || "N/A"}
+              </p>
+              <p>
+                <span className="font-medium">Due Date:</span>{" "}
+                {formatDate(selectedAssignment.dueDate)}
+              </p>
+            </div>
 
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Module
-                  </label>
-                  <select
-                    name="moduleId"
-                    value={formData.moduleId}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                    disabled={!formData.courseId}
-                  >
-                    <option value="">
-                      {formData.courseId
-                        ? "Select Module"
-                        : "Select Course first"}
-                    </option>
-                    {filteredModules.map((module) => (
-                      <option key={module.id} value={module.id}>
-                        {module.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">
+                Submissions ({submissions.length})
+              </h3>
+              {submissions.length === 0 ? (
+                <p className="text-gray-500">No submissions yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Student
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Submitted At
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
 
-                <div>
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Due Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    name="dueDate"
-                    value={formData.dueDate}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                    min={new Date().toISOString().slice(0, 16)}
-                  />
-                </div>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {submissions.map((submission) => (
+                        <tr key={submission.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            {submission.student ? (
+                              <div>
+                                {console.info(submission)}
 
-                <div className="md:col-span-2">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Assignment Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+                                <p className="text-sm font-medium text-gray-900">
+                                  {submission.student.firstName}{" "}
+                                  {submission.student.lastName}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {submission.student.email}
+                                </p>
+                                {submission.student.enrolledBatch && (
+                                  <p className="text-xs text-gray-500">
+                                    Batch:{" "}
+                                    {submission.student.enrolledBatch.name}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                Unknown Student
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(submission.createdAt)}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {submission.fileUrl ? "File" : "Text"}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                            {submission.fileName && (
+                              <button
+                                onClick={() =>
+                                  downloadSubmission(submission.id)
+                                }
+                                className="text-blue-600 hover:text-blue-900 flex items-center"
+                                title="Download Submission"
+                              >
+                                <FiDownload className="mr-1" /> Download
+                              </button>
+                            )}
+                            {submission.text && (
+                              <button
+                                onClick={() => {
+                                  toast.info(
+                                    <div className="p-2">
+                                      <h4 className="font-bold mb-2">
+                                        Text Submission
+                                      </h4>
+                                      <div className="whitespace-pre-wrap bg-gray-100 p-3 rounded">
+                                        {submission.text}
+                                      </div>
+                                      {submission.student && (
+                                        <div className="mt-2 text-sm">
+                                          <p>
+                                            <span className="font-medium">
+                                              Submitted by:
+                                            </span>{" "}
+                                            {submission.student.firstName}{" "}
+                                            {submission.student.lastName}
+                                          </p>
+                                          <p>
+                                            <span className="font-medium">
+                                              Email:
+                                            </span>{" "}
+                                            {submission.student.email}
+                                          </p>
+                                          {submission.student.enrolledBatch && (
+                                            <p>
+                                              <span className="font-medium">
+                                                Batch:
+                                              </span>{" "}
+                                              {
+                                                submission.student.enrolledBatch
+                                                  .name
+                                              }
+                                            </p>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>,
+                                    {
+                                      autoClose: false,
+                                      closeButton: true,
+                                    }
+                                  );
+                                }}
+                                className="text-blue-600 hover:text-blue-900 flex items-center ml-4"
+                                title="View Text Submission"
+                              >
+                                <FiEye className="mr-1" /> View
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows="4"
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  ></textarea>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-gray-700 font-medium mb-2">
-                    Assignment Brief (Optional)
-                  </label>
-                  <input
-                    type="file"
-                    onChange={handleFileChange}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    accept=".pdf,.doc,.docx"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({
-                      batchId: "",
-                      courseId: "",
-                      moduleId: "",
-                      title: "",
-                      description: "",
-                      dueDate: "",
-                      briefFile: null,
-                    })
-                  }
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                >
-                  Clear
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 disabled:bg-blue-400"
-                >
-                  {isSubmitting ? "Creating..." : "Create Assignment"}
-                </button>
-              </div>
-            </form>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold text-blue-700 mb-4">
-              Issued Assignments
-            </h2>
+          <>
+            <div className="flex border-b border-gray-200 mb-6">
+              <button
+                className={`py-3 px-6 font-medium ${
+                  activeTab === "create"
+                    ? "text-blue-700 border-b-2 border-blue-700"
+                    : "text-gray-600"
+                }`}
+                onClick={() => setActiveTab("create")}
+              >
+                Create Assignment
+              </button>
+              <button
+                className={`py-3 px-6 font-medium ${
+                  activeTab === "view"
+                    ? "text-blue-700 border-b-2 border-blue-700"
+                    : "text-gray-600"
+                }`}
+                onClick={() => setActiveTab("view")}
+              >
+                View Assignments ({assignments.length})
+              </button>
+            </div>
 
-            {assignments.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
-                No assignments have been created yet.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Title
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Module
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {activeTab === "create" ? (
+              <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
                         Batch
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      </label>
+                      <select
+                        name="batchId"
+                        value={formData.batchId}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Batch</option>
+                        {batches.map((batch) => (
+                          <option key={batch.id} value={batch.id}>
+                            {batch.name} (
+                            {new Date(batch.startDate).toLocaleDateString()} -{" "}
+                            {new Date(batch.endDate).toLocaleDateString()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Course
+                      </label>
+                      <select
+                        name="courseId"
+                        value={formData.courseId}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="">Select Course</option>
+                        {courses.map((course) => (
+                          <option key={course.id} value={course.id}>
+                            {course.title} ({course.levelName})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Module
+                      </label>
+                      <select
+                        name="moduleId"
+                        value={formData.moduleId}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        disabled={!formData.courseId}
+                      >
+                        <option value="">
+                          {formData.courseId
+                            ? "Select Module"
+                            : "Select Course first"}
+                        </option>
+                        {filteredModules.map((module) => (
+                          <option key={module.id} value={module.id}>
+                            {module.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
                         Due Date
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {assignments.map((assignment) => (
-                      <tr key={assignment.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {assignment.title}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {assignment.module?.title || "N/A"}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {assignment.batch?.name || "N/A"}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(assignment.dueDate)}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <button
-                            onClick={() => downloadBrief(assignment.id)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Download Brief"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        name="dueDate"
+                        value={formData.dueDate}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                        min={new Date().toISOString().slice(0, 16)}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Assignment Title
+                      </label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={formData.title}
+                        onChange={handleInputChange}
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        name="description"
+                        value={formData.description}
+                        onChange={handleInputChange}
+                        rows="4"
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          batchId: "",
+                          courseId: "",
+                          moduleId: "",
+                          title: "",
+                          description: "",
+                          dueDate: "",
+                        })
+                      }
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 disabled:bg-blue-400"
+                    >
+                      {isSubmitting ? "Creating..." : "Create Assignment"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <div className="bg-white border-2 border-blue-700 p-6 rounded-lg shadow">
+                <h2 className="text-xl font-bold text-blue-700 mb-4">
+                  Issued Assignments
+                </h2>
+
+                {assignments.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">
+                    No assignments have been created yet.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Title
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Module
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Batch
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Due Date
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {assignments.map((assignment) => (
+                          <tr key={assignment.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {assignment.title}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {assignment.module?.title || "N/A"}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {assignment.batch?.name || "N/A"}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDate(assignment.dueDate)}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 space-x-2">
+                              <button
+                                onClick={() =>
+                                  setSelectedAssignment(assignment)
+                                }
+                                className="text-blue-600 hover:text-blue-900"
+                                title="View Submissions"
+                              >
+                                <FiEye className="inline mr-1" />
+                                Submissions
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
     </div>
